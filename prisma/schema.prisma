@@ -1,0 +1,419 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id             Int            @id @default(autoincrement())
+  name           String         @db.VarChar(255)
+  slug           String         @unique(map: "slug") @db.VarChar(100)
+  plan           Plan?          @default(basic)
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamp(0)
+  bookings       Booking[]
+  financeEntries FinanceEntry[]
+  leads          Lead[]
+  projects       Project[]
+  tasks          Task[]
+  units          Unit[]
+  users          User[]
+  storeItems     StoreItem[]
+  warehouses     Warehouse[]
+  suppliers      Supplier[]
+  purchaseOrders PurchaseOrder[]
+  bills          Bill[]
+  invoices       Invoice[]
+  journals       Journal[]
+  chartOfAccounts ChartOfAccount[]
+  ledgers        Ledger[]
+  recoveries     Recovery[]
+  agencies       Agency[]
+
+  @@map("tenants")
+}
+
+model User {
+  id            Int       @id @default(autoincrement())
+  tenantId      Int?      @map("tenant_id")
+  username      String    @unique(map: "username") @db.VarChar(255)
+  email         String    @unique(map: "email") @db.VarChar(255)
+  password      String    @db.VarChar(255)
+  role          Role?     @default(agent)
+  isVerified    Boolean?  @default(false) @map("is_verified")
+  otpCode       String?   @map("otp_code") @db.VarChar(6)
+  otpExpiry     DateTime? @map("otp_expiry") @db.Timestamp(0)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
+  assignedLeads Lead[]    @relation("AssignedLeads")
+  assignedTasks Task[]    @relation("AssignedTasks")
+  tenant        Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "users_ibfk_1")
+
+  @@index([tenantId], map: "tenant_id")
+  @@map("users")
+}
+
+model Project {
+  id          Int         @id @default(autoincrement())
+  tenantId    Int         @map("tenant_id")
+  name        String      @db.VarChar(255)
+  type        ProjectType
+  location    String?     @db.VarChar(255)
+  description String?     @db.Text
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamp(0)
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "projects_ibfk_1")
+  units       Unit[]
+
+  @@index([tenantId], map: "tenant_id")
+  @@map("projects")
+}
+
+model Unit {
+  id         Int         @id @default(autoincrement())
+  tenantId   Int         @map("tenant_id")
+  projectId  Int         @map("project_id")
+  unitNumber String      @map("unit_number") @db.VarChar(50)
+  status     UnitStatus? @default(available)
+  price      Decimal?    @db.Decimal(15, 2)
+  created_at DateTime    @default(now()) @db.Timestamp(0)
+  bookings   Booking[]
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "units_ibfk_1")
+  project    Project     @relation(fields: [projectId], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "units_ibfk_2")
+
+  @@index([projectId], map: "project_id")
+  @@index([tenantId], map: "tenant_id")
+  @@map("units")
+}
+
+model Booking {
+  id           Int            @id @default(autoincrement())
+  tenantId     Int            @map("tenant_id")
+  unitId       Int            @map("unit_id")
+  customerName String         @map("customer_name") @db.VarChar(255)
+  bookingDate  DateTime       @default(now()) @map("booking_date") @db.Timestamp(0)
+  amountPaid   Decimal?       @map("amount_paid") @db.Decimal(15, 2)
+  status       BookingStatus? @default(pending)
+  tenant       Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "bookings_ibfk_1")
+  unit         Unit           @relation(fields: [unitId], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "bookings_ibfk_2")
+
+  @@index([tenantId], map: "tenant_id")
+  @@index([unitId], map: "unit_id")
+  @@map("bookings")
+}
+
+model FinanceEntry {
+  id          Int         @id @default(autoincrement())
+  tenantId    Int         @map("tenant_id")
+  type        FinanceType
+  amount      Decimal     @db.Decimal(15, 2)
+  category    String?     @db.VarChar(255)
+  description String?     @db.Text
+  date        DateTime    @default(now()) @db.Timestamp(0)
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "finance_entries_ibfk_1")
+
+  @@index([tenantId], map: "tenant_id")
+  @@map("finance_entries")
+}
+
+model Lead {
+  id         Int         @id @default(autoincrement())
+  tenantId   Int         @map("tenant_id")
+  name       String      @db.VarChar(255)
+  phone      String?     @db.VarChar(50)
+  email      String?     @db.VarChar(255)
+  source     String?     @db.VarChar(100)
+  status     LeadStatus? @default(new)
+  assignedTo Int?        @map("assigned_to")
+  createdAt  DateTime    @default(now()) @map("created_at") @db.Timestamp(0)
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "leads_ibfk_1")
+  assigned   User?       @relation("AssignedLeads", fields: [assignedTo], references: [id], onUpdate: Restrict, map: "leads_ibfk_2")
+
+  @@index([assignedTo], map: "assigned_to")
+  @@index([tenantId], map: "tenant_id")
+  @@map("leads")
+}
+
+model Task {
+  id          Int         @id @default(autoincrement())
+  tenantId    Int         @map("tenant_id")
+  title       String      @db.VarChar(255)
+  description String?     @db.Text
+  assignedTo  Int?        @map("assigned_to")
+  dueDate     DateTime?   @map("due_date") @db.Date
+  status      TaskStatus? @default(todo)
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "tasks_ibfk_1")
+  assigned    User?       @relation("AssignedTasks", fields: [assignedTo], references: [id], onUpdate: Restrict, map: "tasks_ibfk_2")
+
+
+  @@index([assignedTo], map: "assigned_to")
+  @@index([tenantId], map: "tenant_id")
+  @@map("tasks")
+}
+
+model StoreItem {
+  id          Int      @id @default(autoincrement())
+  tenantId    Int      @map("tenant_id")
+  warehouseId Int?     @map("warehouse_id")
+  name        String   @db.VarChar(255)
+  category    String?  @db.VarChar(100)
+  quantity    Int      @default(0)
+  unit        String   @default("pcs") @db.VarChar(20)
+  price       Decimal? @db.Decimal(15, 2)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  warehouse Warehouse? @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId], map: "tenant_id")
+  @@index([warehouseId], map: "warehouse_id")
+  @@map("store_items")
+}
+
+model Warehouse {
+  id        Int         @id @default(autoincrement())
+  tenantId  Int         @map("tenant_id")
+  name      String      @db.VarChar(255)
+  location  String?     @db.VarChar(255)
+  createdAt DateTime    @default(now()) @map("created_at") @db.Timestamp(0)
+  tenant    Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  items     StoreItem[]
+
+  @@index([tenantId], map: "tenant_id")
+  @@map("warehouses")
+}
+
+model Supplier {
+  id        Int             @id @default(autoincrement())
+  tenantId  Int             @map("tenant_id")
+  name      String          @db.VarChar(255)
+  contact   String?         @db.VarChar(255)
+  phone     String?         @db.VarChar(50)
+  email     String?         @db.VarChar(255)
+  address   String?         @db.Text
+  createdAt DateTime        @default(now()) @map("created_at") @db.Timestamp(0)
+  tenant    Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  purchases PurchaseOrder[]
+  bills     Bill[]
+
+  @@index([tenantId], map: "tenant_id")
+  @@map("suppliers")
+}
+
+model PurchaseOrder {
+  id         Int      @id @default(autoincrement())
+  tenantId   Int      @map("tenant_id")
+  supplierId Int      @map("supplier_id")
+  poNumber   String   @map("po_number") @db.VarChar(50)
+  status     String   @default("draft")
+  total      Decimal  @db.Decimal(15, 2)
+  date       DateTime @default(now()) @db.Timestamp(0)
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@index([supplierId], map: "supplier_id")
+  @@index([tenantId], map: "tenant_id")
+  @@map("purchase_orders")
+}
+
+model Bill {
+  id         Int      @id @default(autoincrement())
+  tenantId   Int      @map("tenant_id")
+  supplierId Int      @map("supplier_id")
+  billNumber String   @map("bill_number") @db.VarChar(50)
+  amount     Decimal  @db.Decimal(15, 2)
+  status     String   @default("unpaid")
+  dueDate    DateTime @map("due_date") @db.Timestamp(0)
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@index([supplierId], map: "supplier_id")
+  @@index([tenantId], map: "tenant_id")
+  @@map("bills")
+}
+
+enum Plan {
+  basic
+  pro
+  enterprise
+}
+
+enum Role {
+  superadmin
+  admin
+  manager
+  agent
+}
+
+enum ProjectType {
+  society
+  building
+  industrial
+  townhouse
+}
+
+enum UnitStatus {
+  available
+  booked
+  sold
+  vacant
+  reserved
+}
+
+enum BookingStatus {
+  pending
+  confirmed
+  cancelled
+}
+
+enum FinanceType {
+  income
+  expense
+}
+
+enum LeadStatus {
+  new
+  contacted
+  qualified
+  lost
+  won
+}
+
+enum TaskStatus {
+  todo
+  in_progress
+  done
+}
+
+model Invoice {
+  id          Int           @id @default(autoincrement())
+  tenantId    Int           @map("tenant_id")
+  invoiceNumber String       @map("invoice_number") @db.VarChar(50)
+  customerName String        @map("customer_name") @db.VarChar(255)
+  customerEmail String?      @map("customer_email") @db.VarChar(255)
+  customerPhone String?      @map("customer_phone") @db.VarChar(50)
+  amount     Decimal        @db.Decimal(15, 2)
+  status     String         @default("pending")
+  dueDate    DateTime?      @map("due_date") @db.Timestamp(0)
+  date       DateTime       @default(now()) @db.Timestamp(0)
+  createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamp(0)
+  tenant     Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "tenant_id")
+  @@map("invoices")
+}
+
+model Journal {
+  id          Int           @id @default(autoincrement())
+  tenantId    Int           @map("tenant_id")
+  entryNumber String        @map("entry_number") @db.VarChar(50)
+  date        DateTime       @default(now()) @db.Timestamp(0)
+  description String?        @db.Text
+  debit       Decimal        @db.Decimal(15, 2)
+  credit      Decimal        @db.Decimal(15, 2)
+  account     String         @db.VarChar(255)
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamp(0)
+  tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "tenant_id")
+  @@map("journals")
+}
+
+model ChartOfAccount {
+  id          Int           @id @default(autoincrement())
+  tenantId    Int           @map("tenant_id")
+  code        String        @db.VarChar(20)
+  name        String        @db.VarChar(255)
+  type        String         @db.VarChar(50)
+  category    String         @db.VarChar(50)
+  isActive    Boolean        @default(true) @map("is_active")
+  parentId    Int?          @map("parent_id")
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamp(0)
+  tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  ledgers     Ledger[]
+
+  @@index([tenantId], map: "tenant_id")
+  @@map("chart_of_accounts")
+}
+
+model Ledger {
+  id          Int           @id @default(autoincrement())
+  tenantId    Int           @map("tenant_id")
+  accountId   Int           @map("account_id")
+  date        DateTime       @default(now()) @db.Timestamp(0)
+  description String?        @db.Text
+  debit       Decimal        @db.Decimal(15, 2)
+  credit      Decimal        @db.Decimal(15, 2)
+  balance     Decimal        @db.Decimal(15, 2)
+  reference   String?        @db.VarChar(100)
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamp(0)
+  tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  account     ChartOfAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "tenant_id")
+  @@index([accountId], map: "account_id")
+  @@map("ledgers")
+}
+
+model Recovery {
+  id            Int           @id @default(autoincrement())
+  tenantId      Int           @map("tenant_id")
+  customerName  String        @map("customer_name") @db.VarChar(255)
+  customerPhone String?       @map("customer_phone") @db.VarChar(50)
+  amount        Decimal       @db.Decimal(15, 2)
+  paidAmount    Decimal       @default(0) @map("paid_amount") @db.Decimal(15, 2)
+  dueDate       DateTime      @map("due_date") @db.Timestamp(0)
+  status        String        @default("pending")
+  unitNumber    String?       @map("unit_number") @db.VarChar(50)
+  projectName   String?       @map("project_name") @db.VarChar(255)
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamp(0)
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "tenant_id")
+  @@map("recoveries")
+}
+
+model Agency {
+  id          Int           @id @default(autoincrement())
+  tenantId    Int           @map("tenant_id")
+  name        String        @db.VarChar(255)
+  contactPerson String?     @map("contact_person") @db.VarChar(255)
+  phone       String?       @db.VarChar(50)
+  email       String?       @db.VarChar(255)
+  address     String?       @db.Text
+  commission  Decimal?      @db.Decimal(5, 2)
+  isActive    Boolean       @default(true) @map("is_active")
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamp(0)
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "tenant_id")
+  @@map("agencies")
+}
+
+model Product {
+  id            String     @id @default(cuid())
+  sku           String     @unique(map: "sku") @db.VarChar(100)
+  name          String     @db.VarChar(255)
+  category      String     @db.VarChar(100)
+  current_stock Int        @default(0)
+  stockLogs     StockLog[]
+  createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  @@map("products")
+}
+
+model StockLog {
+  id         String   @id @default(cuid())
+  productId  String   @map("product_id")
+  type       String   @db.VarChar(10) // "IN" or "OUT"
+  quantity   Int      // Absolute positive integer representing the change
+  userId     String   @map("user_id") @db.VarChar(50) // The system User ID who performed the action
+  reasonCode String   @map("reason_code") @db.VarChar(50) // e.g., "PURCHASE", "SALE", "DAMAGE", "RETURN", "TRANSFER"
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+
+  @@index([productId], map: "product_id")
+  @@map("stock_logs")
+}
