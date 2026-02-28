@@ -124,8 +124,12 @@ model Lead {
   email      String?     @db.VarChar(255)
   source     String?     @db.VarChar(100)
   status     LeadStatus? @default(new)
+  priority   String?     @default("Medium") @db.VarChar(20) // Hot, Medium, Cold
+  notes      String?     @db.Text
   assignedTo Int?        @map("assigned_to")
   createdAt  DateTime    @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt  DateTime    @default(now()) @updatedAt @map("updated_at")
+
   tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "leads_ibfk_1")
   assigned   User?       @relation("AssignedLeads", fields: [assignedTo], references: [id], onUpdate: Restrict, map: "leads_ibfk_2")
 
@@ -162,8 +166,11 @@ model StoreItem {
   price       Decimal? @db.Decimal(15, 2)
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(0)
 
-  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: Restrict)
-  warehouse Warehouse? @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
+  tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: Restrict)
+  warehouse          Warehouse?          @relation(fields: [warehouseId], references: [id], onDelete: SetNull)
+  invoiceItems       InvoiceItem[]
+  purchaseOrderItems PurchaseOrderItem[]
+  billItems          BillItem[]
 
   @@index([tenantId], map: "tenant_id")
   @@index([warehouseId], map: "warehouse_id")
@@ -210,6 +217,7 @@ model PurchaseOrder {
   date       DateTime @default(now()) @db.Timestamp(0)
   tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  items      PurchaseOrderItem[]
 
   @@index([supplierId], map: "supplier_id")
   @@index([tenantId], map: "tenant_id")
@@ -226,10 +234,28 @@ model Bill {
   dueDate    DateTime @map("due_date") @db.Timestamp(0)
   tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  items      BillItem[]
 
   @@index([supplierId], map: "supplier_id")
   @@index([tenantId], map: "tenant_id")
   @@map("bills")
+}
+
+model BillItem {
+  id          Int      @id @default(autoincrement())
+  billId      Int      @map("bill_id")
+  storeItemId Int?     @map("store_item_id")
+  description String   @db.VarChar(255)
+  quantity    Int
+  price       Decimal  @db.Decimal(15, 2)
+  total       Decimal  @db.Decimal(15, 2)
+
+  bill      Bill       @relation(fields: [billId], references: [id], onDelete: Cascade)
+  storeItem StoreItem? @relation(fields: [storeItemId], references: [id], onDelete: SetNull)
+
+  @@index([billId], map: "bill_id")
+  @@index([storeItemId], map: "store_item_id")
+  @@map("bill_items")
 }
 
 enum Plan {
@@ -298,9 +324,27 @@ model Invoice {
   date       DateTime       @default(now()) @db.Timestamp(0)
   createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamp(0)
   tenant     Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  items      InvoiceItem[]
 
   @@index([tenantId], map: "tenant_id")
   @@map("invoices")
+}
+
+model InvoiceItem {
+  id          Int      @id @default(autoincrement())
+  invoiceId   Int      @map("invoice_id")
+  storeItemId Int?     @map("store_item_id")
+  description String   @db.VarChar(255)
+  quantity    Int
+  price       Decimal  @db.Decimal(15, 2)
+  total       Decimal  @db.Decimal(15, 2)
+  
+  invoice     Invoice    @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  storeItem   StoreItem? @relation(fields: [storeItemId], references: [id], onDelete: SetNull)
+
+  @@index([invoiceId], map: "invoice_id")
+  @@index([storeItemId], map: "store_item_id")
+  @@map("invoice_items")
 }
 
 model Journal {
@@ -416,4 +460,21 @@ model StockLog {
 
   @@index([productId], map: "product_id")
   @@map("stock_logs")
+}
+
+model PurchaseOrderItem {
+  id          Int      @id @default(autoincrement())
+  poId        Int      @map("po_id")
+  storeItemId Int?     @map("store_item_id")
+  description String   @db.VarChar(255)
+  quantity    Int
+  price       Decimal  @db.Decimal(15, 2)
+  total       Decimal  @db.Decimal(15, 2)
+
+  purchaseOrder PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+  storeItem     StoreItem?    @relation(fields: [storeItemId], references: [id], onDelete: SetNull)
+
+  @@index([poId], map: "po_id")
+  @@index([storeItemId], map: "store_item_id")
+  @@map("purchase_order_items")
 }

@@ -3,74 +3,103 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
-export async function GET(req: Request) {
+export async function GET() {
     try {
         const session = await getServerSession(authOptions);
-        
-        if (!session?.user) {
-            return NextResponse.json({ error: "Unauthorized - No session" }, { status: 401 });
-        }
+        if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
         const user = session.user as any;
-        const tenantId = user.tenantId;
-        const role = user.role;
-
         const where: any = {};
-        if (role !== "superadmin") {
-            if (!tenantId) {
-                return NextResponse.json({ error: "Tenant ID not found" }, { status: 403 });
-            }
-            where.tenantId = tenantId;
-        }
+        if (user.role !== "superadmin") where.tenantId = user.tenantId;
 
         const leads = await db.lead.findMany({
-            where
+            where,
+            orderBy: { createdAt: 'desc' }
         });
-        
+
         return NextResponse.json(leads);
     } catch (error) {
-        console.error("Leads GET error:", error);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+        return NextResponse.json({ error: "Failed to fetch leads" }, { status: 500 });
     }
 }
 
 export async function POST(req: Request) {
     try {
         const session = await getServerSession(authOptions);
-        
-        if (!session?.user) {
-            return NextResponse.json({ error: "Unauthorized - No session" }, { status: 401 });
-        }
+        if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
         const user = session.user as any;
         const tenantId = user.tenantId;
-        const role = user.role;
-
-        if (!tenantId) {
-            return NextResponse.json({ error: "Tenant ID is required" }, { status: 403 });
-        }
+        if (!tenantId) return NextResponse.json({ error: "Tenant ID required" }, { status: 400 });
 
         const body = await req.json();
-        
-        if (!body.name) {
-            return NextResponse.json({ error: "Name is required" }, { status: 400 });
-        }
 
         const lead = await db.lead.create({
             data: {
+                tenantId,
                 name: body.name,
-                phone: body.phone || null,
-                email: body.email || null,
-                source: body.source || "Direct",
-                status: body.status || "new",
-                assignedTo: body.assignedTo || null,
-                tenantId: tenantId
+                phone: body.phone,
+                email: body.email,
+                source: body.source,
+                status: body.status,
+                priority: body.priority || "Medium",
+                notes: body.notes,
+                assignedTo: body.assignedTo ? parseInt(body.assignedTo) : null,
             }
         });
-        
+
         return NextResponse.json(lead);
     } catch (error) {
-        console.error("Leads POST error:", error);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+        return NextResponse.json({ error: "Failed to create lead" }, { status: 500 });
+    }
+}
+
+export async function PUT(req: Request) {
+    try {
+        const session = await getServerSession(authOptions);
+        if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+        const user = session.user as any;
+        const body = await req.json();
+        const { id, ...data } = body;
+
+        const lead = await db.lead.update({
+            where: {
+                id: parseInt(id),
+                tenantId: user.role !== "superadmin" ? user.tenantId : undefined
+            },
+            data: {
+                ...data,
+                assignedTo: data.assignedTo ? parseInt(data.assignedTo) : null
+            }
+        });
+
+        return NextResponse.json(lead);
+    } catch (error) {
+        return NextResponse.json({ error: "Failed to update lead" }, { status: 500 });
+    }
+}
+
+export async function DELETE(req: Request) {
+    try {
+        const session = await getServerSession(authOptions);
+        if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+        const user = session.user as any;
+        const { searchParams } = new URL(req.url);
+        const id = searchParams.get("id");
+
+        if (!id) return NextResponse.json({ error: "ID required" }, { status: 400 });
+
+        await db.lead.delete({
+            where: {
+                id: parseInt(id),
+                tenantId: user.role !== "superadmin" ? user.tenantId : undefined
+            }
+        });
+
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        return NextResponse.json({ error: "Failed to delete lead" }, { status: 500 });
     }
 }

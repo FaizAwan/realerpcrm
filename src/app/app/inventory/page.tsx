@@ -1,36 +1,43 @@
 "use client";
 
-import { useState } from "react";
-import { AlertTriangle, TrendingUp, Package, Truck, ArrowRight, ArrowRightLeft, ShieldAlert } from "lucide-react";
-import { Warehouse, WarehouseStock, Product } from "./schema";
+import { useState, useEffect } from "react";
+import { AlertTriangle, TrendingUp, Package, Truck, ArrowRight, ArrowRightLeft, ShieldAlert, Loader2 } from "lucide-react";
 
-const MOCK_WAREHOUSES: Warehouse[] = [
-    { id: "W1", name: "Main Distribution Center", location: "New York, NY" },
-    { id: "W2", name: "West Coast Hub", location: "Los Angeles, CA" },
-    { id: "W3", name: "Texas Depot", location: "Austin, TX" }
-];
-
-const MOCK_PRODUCTS: Product[] = [
-    { sku: "SKU-1001", name: "Industrial Steel Beams", category: "Construction", uom: "Ton", price: 1200, globalStock: 125 },
-    { sku: "SKU-1002", name: "Cement Bags (50kg)", category: "Construction", uom: "Bag", price: 15, globalStock: 450 },
-    { sku: "SKU-2001", name: "Copper Wiring Bundle", category: "Electrical", uom: "Meter", price: 5, globalStock: 12000 },
-];
-
-const MOCK_STOCK: WarehouseStock[] = [
-    { warehouseId: "W1", sku: "SKU-1001", quantity: 100, reorderPoint: 50 },
-    { warehouseId: "W2", sku: "SKU-1001", quantity: 25, reorderPoint: 40 }, // <== Low Stock
-    { warehouseId: "W1", sku: "SKU-1002", quantity: 300, reorderPoint: 100 },
-    { warehouseId: "W2", sku: "SKU-1002", quantity: 150, reorderPoint: 200 }, // <== Low Stock
-    { warehouseId: "W1", sku: "SKU-2001", quantity: 8000, reorderPoint: 5000 },
-    { warehouseId: "W3", sku: "SKU-2001", quantity: 4000, reorderPoint: 5000 }, // <== Low Stock
-];
+interface StoreItem {
+    id: number;
+    name: string;
+    category: string;
+    quantity: number;
+    price: number;
+    unit: string;
+}
 
 export default function InventoryDashboard() {
-    const [selectedWarehouse, setSelectedWarehouse] = useState<string>("ALL");
+    const [items, setItems] = useState<StoreItem[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
 
-    // Aggregate Data
-    const totalGlobalStock = MOCK_PRODUCTS.reduce((acc, curr) => acc + curr.globalStock, 0);
-    const lowStockItems = MOCK_STOCK.filter(s => s.quantity <= s.reorderPoint && (selectedWarehouse === "ALL" || s.warehouseId === selectedWarehouse));
+    useEffect(() => {
+        fetchInventory();
+    }, []);
+
+    const fetchInventory = async () => {
+        try {
+            const res = await fetch('/api/store');
+            const data = await res.json();
+            if (Array.isArray(data)) setItems(data);
+        } catch (err) {
+            console.error("Failed to fetch inventory", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const categories = Array.from(new Set(items.map(i => i.category || 'Uncategorized')));
+    const filteredItems = items.filter(i => selectedCategory === "ALL" || i.category === selectedCategory);
+
+    const totalGlobalStock = items.reduce((acc, curr) => acc + Number(curr.quantity), 0);
+    const lowStockItems = items.filter(s => s.quantity < 10); // Simple reorder point logic
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
@@ -38,20 +45,20 @@ export default function InventoryDashboard() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                        <Package className="w-6 h-6 text-indigo-600" /> Multi-Location Inventory
+                        <Package className="w-6 h-6 text-indigo-600" /> Inventory & Stock Management
                     </h1>
                     <p className="text-sm text-slate-500 mt-1">Real-time tracking of stock levels across all active warehouses.</p>
                 </div>
 
                 <div className="flex gap-2">
                     <select
-                        value={selectedWarehouse}
-                        onChange={e => setSelectedWarehouse(e.target.value)}
-                        className="bg-white border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5"
+                        value={selectedCategory}
+                        onChange={e => setSelectedCategory(e.target.value)}
+                        className="bg-white border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 shadow-sm"
                     >
-                        <option value="ALL">All Warehouses (Global View)</option>
-                        {MOCK_WAREHOUSES.map(w => (
-                            <option key={w.id} value={w.id}>{w.name}</option>
+                        <option value="ALL">All Categories</option>
+                        {categories.map(c => (
+                            <option key={c} value={c}>{c}</option>
                         ))}
                     </select>
                 </div>
@@ -84,8 +91,10 @@ export default function InventoryDashboard() {
                         <Truck className="w-6 h-6" />
                     </div>
                     <div>
-                        <p className="text-sm font-medium text-slate-500">Active Inbounds</p>
-                        <p className="text-2xl font-bold text-slate-900">4 Pos</p>
+                        <p className="text-sm font-medium text-slate-500">Inventory Value</p>
+                        <p className="text-2xl font-bold text-slate-900">
+                            Rs {items.reduce((acc, curr) => acc + (Number(curr.quantity) * Number(curr.price)), 0).toLocaleString()}
+                        </p>
                     </div>
                 </div>
 
@@ -94,104 +103,64 @@ export default function InventoryDashboard() {
                         <ArrowRightLeft className="w-6 h-6" />
                     </div>
                     <div>
-                        <p className="text-sm font-medium text-slate-500">In Transit (IWT)</p>
-                        <p className="text-2xl font-bold text-slate-900">2 Transfers</p>
+                        <p className="text-sm font-medium text-slate-500">Total Products</p>
+                        <p className="text-2xl font-bold text-slate-900">{items.length}</p>
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Low Stock Watchlist */}
-                <div className="bg-white rounded-2xl border border-rose-200 shadow-sm overflow-hidden lg:col-span-2">
-                    <div className="bg-rose-50 border-b border-rose-100 p-4 flex items-center gap-2">
-                        <ShieldAlert className="text-rose-600 w-5 h-5" />
-                        <h3 className="font-bold text-rose-900">Critical Reorder Watchlist</h3>
+            <div className="grid grid-cols-1 gap-6">
+                {/* Stock Table */}
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div className="bg-slate-50 border-b border-slate-100 p-4 flex items-center justify-between">
+                        <h3 className="font-bold text-slate-900 flex items-center gap-2">
+                            Full Inventory Table
+                        </h3>
+                        <button onClick={fetchInventory} className="text-indigo-600 text-sm font-bold hover:underline">Refresh</button>
                     </div>
-                    <div className="p-0">
-                        <table className="w-full text-left text-sm text-slate-600">
-                            <thead className="bg-slate-50 text-xs uppercase font-semibold text-slate-500 border-b">
-                                <tr>
-                                    <th className="px-4 py-3">Product / SKU</th>
-                                    <th className="px-4 py-3">Warehouse</th>
-                                    <th className="px-4 py-3 text-right">Current Stock</th>
-                                    <th className="px-4 py-3 text-right">Reorder Point</th>
-                                    <th className="px-4 py-3 text-center">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {lowStockItems.length > 0 ? lowStockItems.map((item, idx) => {
-                                    const prod = MOCK_PRODUCTS.find(p => p.sku === item.sku);
-                                    const wh = MOCK_WAREHOUSES.find(w => w.id === item.warehouseId);
-                                    return (
-                                        <tr key={idx} className="hover:bg-slate-50/50">
-                                            <td className="px-4 py-3">
-                                                <div className="font-semibold text-slate-900">{prod?.name}</div>
-                                                <div className="text-xs text-slate-400">{item.sku}</div>
+                    <div className="overflow-x-auto">
+                        {loading ? (
+                            <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-400">
+                                <Loader2 className="w-8 h-8 animate-spin" />
+                                <p className="font-medium">Syncing inventory...</p>
+                            </div>
+                        ) : (
+                            <table className="w-full text-left text-sm text-slate-600">
+                                <thead className="bg-slate-50 text-xs uppercase font-bold text-slate-500 border-b">
+                                    <tr>
+                                        <th className="px-6 py-4">Product Name</th>
+                                        <th className="px-6 py-4">Category</th>
+                                        <th className="px-6 py-4 text-right">Unit Price</th>
+                                        <th className="px-6 py-4 text-right">Current Stock</th>
+                                        <th className="px-6 py-4 text-center">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {filteredItems.map((item, idx) => (
+                                        <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                            <td className="px-6 py-4">
+                                                <div className="font-bold text-slate-900">{item.name}</div>
+                                                <div className="text-xs text-slate-400">ID: {item.id}</div>
                                             </td>
-                                            <td className="px-4 py-3">
-                                                <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-medium">{wh?.name}</span>
+                                            <td className="px-6 py-4">
+                                                <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-bold">{item.category || 'General'}</span>
                                             </td>
-                                            <td className="px-4 py-3 text-right font-bold text-rose-600">{item.quantity}</td>
-                                            <td className="px-4 py-3 text-right">{item.reorderPoint}</td>
-                                            <td className="px-4 py-3 text-center">
-                                                <button className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-medium shadow-sm transition-colors">
-                                                    Draft PO
-                                                </button>
+                                            <td className="px-6 py-4 text-right font-medium">Rs {Number(item.price).toLocaleString()}</td>
+                                            <td className={`px-6 py-4 text-right font-bold ${item.quantity < 10 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                                {item.quantity} {item.unit}
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                {item.quantity < 10 ? (
+                                                    <span className="px-2 py-1 rounded-full bg-rose-100 text-rose-700 text-[10px] font-bold uppercase tracking-wider">Low Stock</span>
+                                                ) : (
+                                                    <span className="px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase tracking-wider">In Stock</span>
+                                                )}
                                             </td>
                                         </tr>
-                                    );
-                                }) : (
-                                    <tr>
-                                        <td colSpan={5} className="text-center py-6 text-slate-400 font-medium">No low stock items in selected view.</td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                {/* Transfer Quick Action / Status */}
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm">
-                    <div className="border-b border-slate-100 p-4">
-                        <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                            <ArrowRightLeft className="w-4 h-4 text-slate-400" /> Recent Transfers (IWT)
-                        </h3>
-                    </div>
-                    <div className="p-4 space-y-4">
-                        {/* Mock Transfer Data */}
-                        <div className="border border-slate-100 rounded-xl p-3 bg-slate-50/50">
-                            <div className="flex justify-between items-center mb-2">
-                                <span className="text-xs font-bold text-slate-500">TRF-9021</span>
-                                <span className="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider animate-pulse">In Transit</span>
-                            </div>
-                            <div className="flex items-center justify-between text-sm font-medium text-slate-800">
-                                <span>Main Dist.</span>
-                                <ArrowRight className="w-4 h-4 text-slate-400" />
-                                <span>Texas Depot</span>
-                            </div>
-                            <div className="mt-2 text-xs text-slate-500">
-                                SKU-2001 (500 Meters)
-                            </div>
-                        </div>
-
-                        <div className="border border-slate-100 rounded-xl p-3 bg-slate-50/50">
-                            <div className="flex justify-between items-center mb-2">
-                                <span className="text-xs font-bold text-slate-500">TRF-9020</span>
-                                <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Completed</span>
-                            </div>
-                            <div className="flex items-center justify-between text-sm font-medium text-slate-800">
-                                <span>West Coast</span>
-                                <ArrowRight className="w-4 h-4 text-slate-400" />
-                                <span>Main Dist.</span>
-                            </div>
-                            <div className="mt-2 text-xs text-slate-500">
-                                SKU-1001 (50 Tons)
-                            </div>
-                        </div>
-
-                        <button className="w-full mt-4 flex items-center justify-center gap-2 text-sm font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 py-2.5 rounded-xl transition-colors">
-                            <ArrowRightLeft className="w-4 h-4" /> New Inter-Warehouse Transfer
-                        </button>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
                     </div>
                 </div>
             </div>

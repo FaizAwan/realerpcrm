@@ -1,28 +1,21 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Plus, Search, Home } from "lucide-react";
+import { Plus, Search, Home, Loader2, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Lead } from "./types";
 
 import { LeadTable } from "./_components/LeadTable";
 import { CreateLeadModal } from "./_components/CreateLeadModal";
 import { ImportExportButtons } from "./_components/ImportExportButtons";
 
-const INITIAL_MOCK_LEADS: Lead[] = [
-    { id: "1", name: "Alice Johnson", phone: "+1 555 1234", email: "alice@example.com", source: "Digital Marketing", status: "New lead", createdAt: "2026-02-20" },
-    { id: "2", name: "Bob Smith", phone: "+1 555 5678", email: "bob@tech.com", source: "Direct Referral", status: "Contacted", createdAt: "2026-02-21" },
-    { id: "3", name: "Charlie Davis", phone: "+1 555 9876", email: "charlie@enterprise.net", source: "Cold Outreach", status: "Qualified", createdAt: "2026-02-22" },
-    { id: "4", name: "Diana Prince", phone: "+1 555 4321", email: "diana@amazon.com", source: "Exhibition", status: "Won / Closed", createdAt: "2026-02-23" },
-    { id: "5", name: "Evan Wright", phone: "+1 555 1111", email: "evan@domain.org", source: "Digital Marketing", status: "Lost", createdAt: "2026-02-24" },
-];
-
 const STATUS_OPTIONS = ["All Statuses", "New lead", "Contacted", "Qualified", "Won / Closed", "Lost"];
 const SOURCE_OPTIONS = ["All Sources", "Digital Marketing", "Direct Referral", "Cold Outreach", "Exhibition"];
 
 export default function LeadDashboard() {
-    const [leads, setLeads] = useState<Lead[]>(INITIAL_MOCK_LEADS);
+    const [leads, setLeads] = useState<Lead[]>([]);
+    const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingLead, setEditingLead] = useState<Lead | null>(null);
 
@@ -31,52 +24,86 @@ export default function LeadDashboard() {
     const [statusFilter, setStatusFilter] = useState("All Statuses");
     const [sourceFilter, setSourceFilter] = useState("All Sources");
 
-    const handleOpenModal = (lead?: Lead) => {
-        if (lead) {
-            setEditingLead(lead);
-        } else {
-            setEditingLead(null);
+    useEffect(() => {
+        fetchLeads();
+    }, []);
+
+    const fetchLeads = async () => {
+        try {
+            const res = await fetch('/api/leads');
+            const data = await res.json();
+            if (Array.isArray(data)) setLeads(data);
+        } catch (err) {
+            console.error("Failed to fetch leads", err);
+        } finally {
+            setLoading(false);
         }
+    };
+
+    const handleOpenModal = (lead?: Lead) => {
+        setEditingLead(lead || null);
         setIsModalOpen(true);
     };
 
-    const handleSaveLead = (formData: Omit<Lead, "id" | "createdAt">) => {
-        if (editingLead) {
-            // Update
-            setLeads(leads.map(l => l.id === editingLead.id ? { ...l, ...formData } : l));
-        } else {
-            // Create
-            const newLead: Lead = {
-                id: Math.random().toString(36).substr(2, 9),
-                ...formData,
-                createdAt: new Date().toISOString().split('T')[0]
-            };
-            setLeads([newLead, ...leads]);
+    const handleSaveLead = async (formData: any) => {
+        try {
+            const method = editingLead ? 'PUT' : 'POST';
+            const body = editingLead ? { ...formData, id: editingLead.id } : formData;
+
+            const res = await fetch('/api/leads', {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            if (res.ok) {
+                fetchLeads();
+                setIsModalOpen(false);
+            } else {
+                alert("Failed to save lead");
+            }
+        } catch (err) {
+            console.error(err);
         }
     };
 
-    const handleDeleteLead = (id: string) => {
-        if (confirm("Are you sure you want to delete this lead?")) {
-            setLeads(leads.filter(l => l.id !== id));
+    const handleDeleteLead = async (id: string | number) => {
+        if (!confirm("Are you sure you want to delete this lead?")) return;
+        try {
+            const res = await fetch(`/api/leads?id=${id}`, { method: 'DELETE' });
+            if (res.ok) fetchLeads();
+            else alert("Failed to delete lead");
+        } catch (err) {
+            console.error(err);
         }
     };
 
-    const handleStatusChange = (id: string, newStatus: string) => {
-        setLeads(leads.map(l => l.id === id ? { ...l, status: newStatus } : l));
+    const handleStatusChange = async (id: string | number, newStatus: string) => {
+        try {
+            const res = await fetch('/api/leads', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, status: newStatus })
+            });
+            if (res.ok) fetchLeads();
+        } catch (err) {
+            console.error(err);
+        }
     };
 
-    const handleImport = (importedLeads: Omit<Lead, "id" | "createdAt">[]) => {
-        const mapped = importedLeads.map(l => ({
-            id: Math.random().toString(36).substr(2, 9),
-            ...l,
-            createdAt: new Date().toISOString().split('T')[0]
-        }));
-        setLeads([...mapped, ...leads]);
-        // alert(`Imported ${mapped.length} leads successfully!`);
+    const handleImport = async (importedLeads: any[]) => {
+        setLoading(true);
+        for (const lead of importedLeads) {
+            await fetch('/api/leads', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(lead)
+            });
+        }
+        fetchLeads();
     };
 
     // Calculate metrics
-    const overallTotal = leads.length;
     const metrics = STATUS_OPTIONS.slice(1).map(status => ({
         status,
         total: leads.filter(l => l.status === status).length
@@ -86,8 +113,8 @@ export default function LeadDashboard() {
     const filteredLeads = leads.filter(lead => {
         const matchesSearch =
             lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            lead.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            lead.phone.includes(searchQuery);
+            lead.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            lead.phone?.includes(searchQuery);
         const matchesStatus = statusFilter === "All Statuses" || lead.status === statusFilter;
         const matchesSource = sourceFilter === "All Sources" || lead.source === sourceFilter;
 
@@ -95,30 +122,30 @@ export default function LeadDashboard() {
     });
 
     return (
-        <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500">
+        <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500 pb-20">
             {/* Header Section */}
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-                        <Home className="w-6 h-6 text-primary" /> Leads Dashboard
+                    <h1 className="text-3xl font-black tracking-tight text-slate-900 flex items-center gap-2">
+                        <Home className="w-8 h-8 text-primary" /> Lead Management
                     </h1>
-                    <p className="text-sm font-medium text-slate-500 mt-1">Manage and track your primary prospect pipelines.</p>
+                    <p className="text-sm font-medium text-slate-500 mt-1">Institutional-grade prospect tracking and conversion pipeline.</p>
                 </div>
 
                 <div className="flex items-center gap-3">
                     <ImportExportButtons leads={leads} onImport={handleImport} />
                     <button
                         onClick={() => handleOpenModal()}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-bold uppercase shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:bg-primary-dark transition-all hover:-translate-y-0.5"
+                        className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-2xl text-sm font-bold uppercase shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:bg-primary-dark transition-all hover:-translate-y-0.5"
                     >
                         <Plus className="w-5 h-5" />
-                        Add New Lead
+                        Capture New Lead
                     </button>
                 </div>
             </div>
 
             {/* Metrics Section */}
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-6">
                 {metrics.map((item, i) => (
                     <motion.div
                         key={item.status}
@@ -127,66 +154,82 @@ export default function LeadDashboard() {
                         transition={{ delay: i * 0.05 }}
                         onClick={() => setStatusFilter(item.status)}
                         className={cn(
-                            "p-5 rounded-2xl border cursor-pointer hover:shadow-md transition-all duration-300 relative overflow-hidden group",
+                            "p-6 rounded-3xl border cursor-pointer hover:shadow-xl transition-all duration-300 relative overflow-hidden group",
                             statusFilter === item.status
-                                ? "bg-primary/5 border-primary shadow-sm"
-                                : "bg-white border-slate-200 hover:border-slate-300"
+                                ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
+                                : "bg-white border-slate-200 hover:border-primary/50"
                         )}
                     >
                         <div className="flex flex-col gap-1 relative z-10">
-                            <span className="text-xs font-bold uppercase text-slate-500 tracking-wider">
+                            <span className={cn(
+                                "text-[10px] font-black uppercase tracking-widest",
+                                statusFilter === item.status ? "text-white/60" : "text-slate-400"
+                            )}>
                                 {item.status}
                             </span>
-                            <span className="text-3xl font-black text-slate-800 tracking-tight">
+                            <span className="text-4xl font-black tracking-tighter">
                                 {item.total}
                             </span>
                         </div>
                         {statusFilter === item.status && (
-                            <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-full blur-2xl -mr-10 -mt-10" />
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16" />
                         )}
                     </motion.div>
                 ))}
             </div>
 
             {/* Toolbar Filters Section */}
-            <div className="bg-white p-4 border border-slate-200 rounded-2xl shadow-sm flex flex-col md:flex-row items-center gap-4">
+            <div className="bg-white p-6 border border-slate-200 rounded-3xl shadow-sm flex flex-col md:flex-row items-center gap-4">
                 <div className="relative flex-1">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                     <input
                         type="text"
-                        placeholder="Search leads by name, email, or phone..."
+                        placeholder="Search leads by name, email, or phone identifier..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 bg-slate-50/50 hover:bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                        className="w-full pl-12 pr-4 py-3.5 bg-slate-50/50 hover:bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all shadow-inner"
                     />
                 </div>
-                <div className="flex w-full md:w-auto gap-3">
-                    <select
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        className="flex-1 md:w-48 px-4 py-2.5 bg-slate-50/50 hover:bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer"
-                    >
-                        {STATUS_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                    </select>
+                <div className="flex w-full md:w-auto gap-4">
+                    <div className="relative flex-1 md:w-56">
+                        <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            className="w-full pl-9 pr-4 py-3.5 bg-slate-50/50 hover:bg-slate-50 border border-slate-200 rounded-2xl text-[12px] font-black uppercase text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer"
+                        >
+                            {STATUS_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                        </select>
+                    </div>
 
-                    <select
-                        value={sourceFilter}
-                        onChange={(e) => setSourceFilter(e.target.value)}
-                        className="flex-1 md:w-48 px-4 py-2.5 bg-slate-50/50 hover:bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer"
-                    >
-                        {SOURCE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                    </select>
+                    <div className="relative flex-1 md:w-56">
+                        <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                        <select
+                            value={sourceFilter}
+                            onChange={(e) => setSourceFilter(e.target.value)}
+                            className="w-full pl-9 pr-4 py-3.5 bg-slate-50/50 hover:bg-slate-50 border border-slate-200 rounded-2xl text-[12px] font-black uppercase text-slate-700 outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer"
+                        >
+                            {SOURCE_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                        </select>
+                    </div>
                 </div>
             </div>
 
             {/* Table Section */}
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
-                <LeadTable
-                    leads={filteredLeads}
-                    onEdit={handleOpenModal}
-                    onDelete={handleDeleteLead}
-                    onStatusChange={handleStatusChange}
-                />
+                {loading ? (
+                    <div className="p-40 flex flex-col items-center justify-center gap-4 text-slate-400">
+                        <Loader2 className="w-12 h-12 animate-spin text-primary" />
+                        <p className="font-bold uppercase text-[10px] tracking-widest animate-pulse">Synchronizing Leads Archive...</p>
+                    </div>
+                ) : (
+                    <LeadTable
+                        leads={filteredLeads}
+                        onEdit={handleOpenModal}
+                        onDelete={handleDeleteLead}
+                        onStatusChange={handleStatusChange}
+                    />
+                )}
             </motion.div>
 
             {/* Modal */}

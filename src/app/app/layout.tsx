@@ -37,48 +37,72 @@ import { cn } from "@/lib/utils";
 
 const sidebarItems = [
     { name: "Dashboard", href: "/app", icon: LayoutDashboard },
+
     {
-        name: "Company",
-        icon: Building2,
+        name: "Sales & CRM",
+        icon: Users,
         subItems: [
-            { name: "New company", href: "/app/company/newCompany", icon: FileText },
-            { name: "All companies", href: "/app/company/companies", icon: List },
+            { name: "Leads", href: "/app/lead", icon: Users },
+            { name: "Contacts", href: "/app/contact", icon: Users },
             { name: "Agencies", href: "/app/agencies", icon: Users },
-            { name: "Company", href: "/app/company/companyDetail", icon: Building2 },
+            { name: "Invoices", href: "/app/accounts/invoices", icon: FileText },
+            { name: "Bookings", href: "/app/booking", icon: BookOpen },
+            { name: "Billing", href: "/app/billing", icon: Receipt },
         ]
     },
-    { name: "Contact", href: "/app/contact", icon: Users },
-    { name: "Leads", href: "/app/lead", icon: Users },
-    { name: "Administration", href: "/app/administration", icon: Settings },
-    { name: "User guide", href: "/app/user-guide", icon: BookOpen },
-    { name: "Get started", href: "/app/get-started", icon: LayoutDashboard },
-    { name: "Bookings", href: "/app/booking", icon: BookOpen },
-    { name: "Finance", href: "/app/finance", icon: Banknote },
+
     {
-        name: "Accounts",
+        name: "Purchase & Inventory",
+        icon: ShoppingCart,
+        subItems: [
+            { name: "Inventory Dashboard", href: "/app/inventory", icon: Warehouse },
+            { name: "Suppliers", href: "/app/suppliers", icon: Truck },
+            { name: "Purchase Orders", href: "/app/purchase", icon: ShoppingCart },
+            { name: "Bills / Expenses", href: "/app/accounts/bills", icon: Receipt },
+            { name: "Store Management", href: "/app/store", icon: Warehouse },
+        ]
+    },
+
+    {
+        name: "Finance & Accounts",
         icon: Wallet,
         subItems: [
             { name: "Chart of Accounts", href: "/app/accounts/chart-of-accounts", icon: List },
             { name: "Customer Ledgers", href: "/app/accounts/ledgers/customers", icon: Users },
             { name: "Supplier Ledgers", href: "/app/accounts/ledgers/suppliers", icon: Truck },
-            { name: "Invoices", href: "/app/accounts/invoices", icon: FileText },
-            { name: "Bills", href: "/app/accounts/bills", icon: Receipt },
             { name: "Journals", href: "/app/accounts/journals", icon: BookOpen },
             { name: "Balance Sheet", href: "/app/accounts/reports/balance-sheet", icon: FileSpreadsheet },
+            { name: "Profit & Loss", href: "/app/accounts/reports/income-statement", icon: ScrollText },
             { name: "Cash Flow", href: "/app/accounts/reports/cash-flow", icon: CircleDollarSign },
             { name: "Trial Balance", href: "/app/accounts/reports/trial-balance", icon: Calculator },
-            { name: "Income Statement", href: "/app/accounts/reports/income-statement", icon: ScrollText },
         ]
     },
-    { name: "Tasks", href: "/app/tasks", icon: CheckSquare },
-    { name: "Projects", href: "/app/projects", icon: FolderKanban },
-    { name: "Map View", href: "/app/map-view", icon: Map },
-    { name: "Store", href: "/app/store", icon: Warehouse },
-    { name: "Suppliers/Vendors", href: "/app/suppliers", icon: Truck },
-    { name: "Purchase", href: "/app/purchase", icon: ShoppingCart },
-    { name: "Billing", href: "/app/billing", icon: Receipt },
-    { name: "Reports", href: "/app/reports", icon: BarChart3 },
-    { name: "Copilot", href: "/app/copilot", icon: Cpu },
+
+    {
+        name: "Company & Org",
+        icon: Building2,
+        subItems: [
+            { name: "Company Detail", href: "/app/company/companyDetail", icon: Building2 },
+            { name: "New Company", href: "/app/company/newCompany", icon: FileText },
+            { name: "All Companies", href: "/app/company/companies", icon: List },
+            { name: "Map View", href: "/app/map-view", icon: Map },
+        ]
+    },
+
+    {
+        name: "Operations",
+        icon: FolderKanban,
+        subItems: [
+            { name: "Projects", href: "/app/projects", icon: FolderKanban },
+            { name: "Tasks", href: "/app/tasks", icon: CheckSquare },
+            { name: "Administration", href: "/app/administration", icon: Settings },
+            { name: "Finance Hub", href: "/app/finance", icon: Banknote },
+        ]
+    },
+
+    { name: "Reports & Analytics", href: "/app/reports", icon: BarChart3 },
+    { name: "User Guide", href: "/app/user-guide", icon: BookOpen },
+    { name: "AI Copilot", href: "/app/copilot", icon: Cpu },
 ];
 
 export default function AppLayout({
