@@ -45,10 +45,16 @@ export default function Footer() {
                                 <span className="absolute bottom-[-10px] left-0 w-8 h-1 bg-primary rounded-full"></span>
                             </h4>
                             <ul className="space-y-4">
-                                {['Home', 'About', 'Features', 'Services', 'Privacy Policy'].map((item) => (
-                                    <li key={item}>
-                                        <Link href={`/${item.toLowerCase()}`} className="text-slate-500 hover:text-primary transition-colors text-sm font-medium">
-                                            {item}
+                                {[
+                                    { name: 'Home', href: '/' },
+                                    { name: 'About', href: '/about' },
+                                    { name: 'Features', href: '/features' },
+                                    { name: 'Services', href: '#' },
+                                    { name: 'Privacy Policy', href: '#' }
+                                ].map((item) => (
+                                    <li key={item.name}>
+                                        <Link href={item.href} className="text-slate-500 hover:text-primary transition-colors text-sm font-medium">
+                                            {item.name}
                                         </Link>
                                     </li>
                                 ))}

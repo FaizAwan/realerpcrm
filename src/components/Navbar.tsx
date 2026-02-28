@@ -100,8 +100,8 @@ export default function Navbar() {
                         </div>
 
                         <Link href="/features" className="hover:text-primary transition-colors text-xs uppercase tracking-[0.1em] font-black">Features</Link>
-                        <Link href="/blog" className="hover:text-primary transition-colors text-xs uppercase tracking-[0.1em] font-black">Blog</Link>
-                        <Link href="/testimonials" className="hover:text-primary transition-colors text-xs uppercase tracking-[0.1em] font-black">Testimonials</Link>
+                        <Link href="#" className="hover:text-primary transition-colors text-xs uppercase tracking-[0.1em] font-black">Blog</Link>
+                        <Link href="#" className="hover:text-primary transition-colors text-xs uppercase tracking-[0.1em] font-black">Testimonials</Link>
                     </div>
 
                     <div className="flex items-center gap-3 shrink-0">

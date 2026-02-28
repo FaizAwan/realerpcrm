@@ -58,11 +58,21 @@ export function PlotManagementMap({ hideHeader = false }: { hideHeader?: boolean
         const fetchProjects = async () => {
             try {
                 const res = await fetch('/api/projects');
+                if (!res.ok) {
+                    console.error("Failed to fetch projects:", res.status);
+                    setProjects([]);
+                    return;
+                }
                 const data = await res.json();
-                setProjects(data);
-                if (data.length > 0) setSelectedProjectId(data[0].id);
+                if (Array.isArray(data)) {
+                    setProjects(data);
+                    if (data.length > 0) setSelectedProjectId(data[0].id);
+                } else {
+                    setProjects([]);
+                }
             } catch (error) {
-                toast.error("Failed to load societies");
+                console.error("Fetch projects error:", error);
+                setProjects([]);
             }
         };
         fetchProjects();
@@ -74,11 +84,20 @@ export function PlotManagementMap({ hideHeader = false }: { hideHeader?: boolean
             setIsLoading(true);
             try {
                 const res = await fetch(`/api/units?projectId=${selectedProjectId}`);
+                if (!res.ok) {
+                    setUnits([]);
+                    return;
+                }
                 const data = await res.json();
-                // Filter by projectId just in case the generic API returns all for tenant
-                setUnits(data.filter((u: any) => u.projectId === selectedProjectId));
+                if (Array.isArray(data)) {
+                    // Filter by projectId just in case the generic API returns all for tenant
+                    setUnits(data.filter((u: any) => u.projectId === selectedProjectId));
+                } else {
+                    setUnits([]);
+                }
             } catch (error) {
-                toast.error("Failed to load blocks");
+                console.error("Fetch units error:", error);
+                setUnits([]);
             } finally {
                 setIsLoading(false);
             }
@@ -205,7 +224,7 @@ export function PlotManagementMap({ hideHeader = false }: { hideHeader?: boolean
                                 onChange={(e) => setSelectedProjectId(Number(e.target.value))}
                                 className="text-sm font-bold text-slate-500 bg-transparent border-none focus:ring-0 cursor-pointer hover:text-primary transition-colors p-0"
                             >
-                                {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                {Array.isArray(projects) && projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                             </select>
                         </div>
                     </div>

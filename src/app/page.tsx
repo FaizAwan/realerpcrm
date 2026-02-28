@@ -44,9 +44,11 @@ export default function LandingPage() {
                   <span className="bg-teal-600 text-white px-3 py-1.5 rounded-full text-[10px] font-semibold shadow-sm text-center">Industrial site planning</span>
                   <span className="bg-teal-600 text-white px-3 py-1.5 rounded-full text-[10px] font-semibold shadow-sm text-center">Construction company</span>
                 </div>
-                <button className="text-slate-500 font-medium text-xs hover:text-teal-600 transition-colors flex items-center gap-1 group mt-auto">
-                  View features <span className="text-lg leading-none group-hover:translate-x-1 transition-transform">»</span>
-                </button>
+                <Link href="/features">
+                  <button className="text-slate-500 font-medium text-xs hover:text-teal-600 transition-colors flex items-center gap-1 group mt-auto">
+                    View features <span className="text-lg leading-none group-hover:translate-x-1 transition-transform">»</span>
+                  </button>
+                </Link>
               </div>
             </div>
 
@@ -104,9 +106,11 @@ export default function LandingPage() {
                   <span className="bg-teal-600 text-white px-3 py-1.5 rounded-full text-[10px] font-semibold shadow-sm text-center">Co-working office management</span>
                   <span className="bg-teal-600 text-white px-3 py-1.5 rounded-full text-[10px] font-semibold shadow-sm text-center">Hotel management</span>
                 </div>
-                <button className="text-slate-500 font-medium text-xs hover:text-teal-600 transition-colors flex items-center gap-1 group mt-auto">
-                  View features <span className="text-lg leading-none group-hover:translate-x-1 transition-transform">»</span>
-                </button>
+                <Link href="/features">
+                  <button className="text-slate-500 font-medium text-xs hover:text-teal-600 transition-colors flex items-center gap-1 group mt-auto">
+                    View features <span className="text-lg leading-none group-hover:translate-x-1 transition-transform">»</span>
+                  </button>
+                </Link>
               </div>
             </div>
 
