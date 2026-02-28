@@ -91,7 +91,7 @@ export default function UserGuidePage() {
                 <div className="space-y-6">
                     <div className="sticky top-24">
                         <motion.div
-                            initial={{ opacity: 0, opacity: 0.5 }}
+                            initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             className="bg-[#00605A] rounded-3xl p-8 text-white shadow-xl shadow-[#00605A]/20 overflow-hidden relative"
                         >

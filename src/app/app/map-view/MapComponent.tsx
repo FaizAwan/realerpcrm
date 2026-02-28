@@ -32,7 +32,7 @@ interface Project {
     mapImage: string | null;
 }
 
-export function PlotManagementMap() {
+export function PlotManagementMap({ hideHeader = false }: { hideHeader?: boolean }) {
     // --- State Management ---
     const [projects, setProjects] = useState<Project[]>([]);
     const [units, setUnits] = useState<Unit[]>([]);

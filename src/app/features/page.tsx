@@ -295,7 +295,7 @@ export default function FeaturesPage() {
                     <p className="text-slate-500 mb-12  font-medium">Now change the way you manage your modern Societies with <span className="text-primary font-bold">RealERPCRM</span></p>
 
                     <div className="max-w-6xl mx-auto rounded-xl shadow-md overflow-hidden relative">
-                        <PlotManagementMap hideHeader={true} />
+                        <PlotManagementMap />
                     </div>
                 </div>
             </section>
