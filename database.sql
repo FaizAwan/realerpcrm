@@ -166,7 +166,7 @@ INSERT INTO `tenants` (`id`, `name`, `slug`, `plan`) VALUES
 
 -- Password is 'superpassword123' hashed (in dummy code we use raw for SQL import, but app uses bcrypt)
 INSERT INTO `users` (`id`, `tenant_id`, `username`, `email`, `password`, `role`, `is_verified`) VALUES
-(1, NULL, 'superadmin', 'superadmin@fortify.biz', '$2a$10$vI8A7DXpZyFjU1eP7pM9ZeNqW5m5mO5/b5yYpXJ5jXJ5jXJ5jXJ5', 'superadmin', 1),
+(1, NULL, 'superadmin', 'superadmin@realerpcrm.com', '$2a$10$vI8A7DXpZyFjU1eP7pM9ZeNqW5m5mO5/b5yYpXJ5jXJ5jXJ5jXJ5', 'superadmin', 1),
 (2, 1, 'elite_admin', 'admin@elitedev.com', '$2a$10$vI8A7DXpZyFjU1eP7pM9ZeNqW5m5mO5/b5yYpXJ5jXJ5jXJ5jXJ5', 'admin', 1),
 (3, 1, 'elite_agent', 'agent@elitedev.com', '$2a$10$vI8A7DXpZyFjU1eP7pM9ZeNqW5m5mO5/b5yYpXJ5jXJ5jXJ5jXJ5', 'agent', 1);
 

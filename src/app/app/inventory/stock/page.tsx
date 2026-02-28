@@ -12,9 +12,9 @@ const productsData = [
 ];
 
 const mockLogs = [
-    { id: "log_1", type: "IN", quantity: 50, reasonCode: "PURCHASE", userId: "usr_9000_fortify", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2) },
+    { id: "log_1", type: "IN", quantity: 50, reasonCode: "PURCHASE", userId: "usr_9000_realerpcrm", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2) },
     { id: "log_2", type: "OUT", quantity: 15, reasonCode: "SALE", userId: "usr_2001_john", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5) },
-    { id: "log_3", type: "IN", quantity: 300, reasonCode: "RETURN", userId: "usr_9000_fortify", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24) },
+    { id: "log_3", type: "IN", quantity: 300, reasonCode: "RETURN", userId: "usr_9000_realerpcrm", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24) },
     { id: "log_4", type: "OUT", quantity: 5, reasonCode: "DAMAGE", userId: "usr_2015_mary", createdAt: new Date(Date.now() - 1000 * 60 * 60 * 28) },
 ];
 // === MOCK ORM DATA END ===

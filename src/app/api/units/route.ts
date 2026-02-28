@@ -6,7 +6,7 @@ import { NextResponse } from "next/server";
 export async function GET(req: Request) {
     try {
         const session = await getServerSession(authOptions);
-        
+
         if (!session?.user) {
             return NextResponse.json({ error: "Unauthorized - No session" }, { status: 401 });
         }
@@ -29,7 +29,7 @@ export async function GET(req: Request) {
                 project: true
             }
         });
-        
+
         return NextResponse.json(units);
     } catch (error) {
         console.error("Units GET error:", error);
@@ -40,7 +40,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
     try {
         const session = await getServerSession(authOptions);
-        
+
         if (!session?.user) {
             return NextResponse.json({ error: "Unauthorized - No session" }, { status: 401 });
         }
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        
+
         if (!body.unitNumber) {
             return NextResponse.json({ error: "Unit number is required" }, { status: 400 });
         }
@@ -69,10 +69,21 @@ export async function POST(req: Request) {
                 projectId: parseInt(body.projectId),
                 status: body.status || "available",
                 price: body.price ? parseFloat(body.price) : null,
-                tenantId: tenantId
+                tenantId: tenantId,
+                // Map Data
+                x: body.x ? parseFloat(body.x) : 0,
+                y: body.y ? parseFloat(body.y) : 0,
+                width: body.width ? parseFloat(body.width) : 100,
+                height: body.height ? parseFloat(body.height) : 100,
+                shapeType: body.shapeType || "rect",
+                // Ownership & Rental Data
+                ownerName: body.ownerName || null,
+                ownerPhone: body.ownerPhone || null,
+                isRented: !!body.isRented,
+                rentAmount: body.rentAmount ? parseFloat(body.rentAmount) : null
             }
         });
-        
+
         return NextResponse.json(unit);
     } catch (error) {
         console.error("Units POST error:", error);

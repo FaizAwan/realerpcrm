@@ -42,7 +42,7 @@ export default function StockForm({ products }: { products: Product[] }) {
 
         // Explicitly add type and dummy userId
         formData.append("type", type);
-        formData.append("userId", "usr_9000_fortify");
+        formData.append("userId", "usr_9000_realerpcrm");
 
         // Pre-emptively update UI
         if (quantity > 0 && productId) {
@@ -92,8 +92,8 @@ export default function StockForm({ products }: { products: Product[] }) {
                         type="button"
                         onClick={() => setActiveType("IN")}
                         className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold transition-all duration-300 ${activeType === "IN"
-                                ? "bg-white text-emerald-600 shadow-sm"
-                                : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
+                            ? "bg-white text-emerald-600 shadow-sm"
+                            : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
                             }`}
                     >
                         <PackagePlus className="w-5 h-5" /> Stock IN
@@ -102,8 +102,8 @@ export default function StockForm({ products }: { products: Product[] }) {
                         type="button"
                         onClick={() => setActiveType("OUT")}
                         className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold transition-all duration-300 ${activeType === "OUT"
-                                ? "bg-white text-rose-600 shadow-sm"
-                                : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
+                            ? "bg-white text-rose-600 shadow-sm"
+                            : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
                             }`}
                     >
                         <PackageMinus className="w-5 h-5" /> Stock OUT
@@ -173,8 +173,8 @@ export default function StockForm({ products }: { products: Product[] }) {
                     type="submit"
                     disabled={isSubmitting}
                     className={`w-full py-4 rounded-xl text-white font-bold flex justify-center items-center gap-2 transition-all duration-500 hover:scale-[1.02] shadow-xl ${activeType === "IN"
-                            ? "bg-gradient-to-r from-emerald-500 to-emerald-400 hover:shadow-emerald-500/25"
-                            : "bg-gradient-to-r from-rose-500 to-orange-500 hover:shadow-rose-500/25"
+                        ? "bg-gradient-to-r from-emerald-500 to-emerald-400 hover:shadow-emerald-500/25"
+                        : "bg-gradient-to-r from-rose-500 to-orange-500 hover:shadow-rose-500/25"
                         } focus:ring-4 focus:ring-offset-2 ${activeType === "IN" ? "focus:ring-emerald-500" : "focus:ring-rose-500"}`}
                 >
                     {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : (

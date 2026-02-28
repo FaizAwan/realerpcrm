@@ -1,6 +1,6 @@
-# RealEstateFortify - Cloud-Based Real Estate ERP/CRM
+# RealERPCRM - Cloud-Based Real Estate ERP/CRM
 
-RealEstateFortify is a comprehensive SaaS solution for realtors, developers, builders, and property managers. It streamlines operations, manages leads, tracks bookings, and provides AI-driven financial analysis.
+RealERPCRM is a comprehensive SaaS solution for realtors, developers, builders, and property managers. It streamlines operations, manages leads, tracks bookings, and provides AI-driven financial analysis.
 
 ## Tech Stack
 

@@ -5,408 +5,538 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Map, Search, Filter, ZoomIn, ZoomOut, Maximize,
     Home, Users, Clock, AlertCircle, Calendar, CreditCard,
-    Phone, Mail, X
+    Phone, Mail, X, Plus, Save, Trash2, Edit3, Move, MousePointer2, Settings
 } from 'lucide-react';
+import { toast } from 'sonner';
 
-// Mock Data for the Society Plots
-const MOCK_PLOTS = [
-    { id: '101', type: 'Residential', status: 'available', size: '120 Sq Yd', owner: null },
-    {
-        id: '102', type: 'Residential', status: 'sold', size: '120 Sq Yd',
-        owner: { name: 'Ali Asghar', phone: '03332877345', plan: 'Gold - 2 Bed', ref: 'SUN-970581', lastPayment: '17/09/2022', daysPending: 9 }
-    },
-    {
-        id: '103', type: 'Commercial', status: 'overdue', size: '200 Sq Yd',
-        owner: { name: 'Sumera Amjad', phone: '03337008343', plan: 'Gold - 3 Bed', ref: 'SUN12376', lastPayment: '16/09/2022', daysPending: 10 }
-    },
-    { id: '104', type: 'Residential', status: 'available', size: '120 Sq Yd', owner: null },
-    {
-        id: '105', type: 'Residential', status: 'sold', size: '120 Sq Yd',
-        owner: { name: 'Saqib Arain', phone: '03337008343', plan: 'Ground floor - Shops', ref: 'SUN569346', lastPayment: '28/08/2022', daysPending: 29 }
-    },
-    {
-        id: '106', type: 'Commercial', status: 'critical', size: '200 Sq Yd',
-        owner: { name: 'Ali Memon', phone: '03337008343', plan: 'Ground floor - Shops', ref: 'SUN234878', lastPayment: '25/08/2022', daysPending: 32 }
-    },
-    {
-        id: '107', type: 'Residential', status: 'sold', size: '120 Sq Yd',
-        owner: { name: 'Kamran Khan', phone: '03001234567', plan: 'Silver - 2 Bed', ref: 'SUN-445123', lastPayment: '01/10/2022', daysPending: 5 }
-    },
-    { id: '108', type: 'Commercial', status: 'available', size: '400 Sq Yd', owner: null },
-];
+interface Unit {
+    id: number;
+    unitNumber: string;
+    projectId: number;
+    status: string;
+    price: number | null;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    shapeType: string;
+    ownerName: string | null;
+    ownerPhone: string | null;
+    isRented: boolean;
+    rentAmount: number | null;
+}
 
-// Generate a grid of plots dynamically
-const generatePlots = () => {
-    const plots = [];
-    const rows = 6;
-    const cols = 15;
+interface Project {
+    id: number;
+    name: string;
+    mapImage: string | null;
+}
 
-    // Road logic
-    for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-            // Leave gaps for roads
-            if (c === 5 || c === 10 || r === 2) continue;
+export function PlotManagementMap() {
+    // --- State Management ---
+    const [projects, setProjects] = useState<Project[]>([]);
+    const [units, setUnits] = useState<Unit[]>([]);
+    const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
-            const plotId = `${r + 1}0${c + 1}`;
-            const mockData = MOCK_PLOTS.find(p => p.id === plotId) || {
-                id: plotId,
-                type: Math.random() > 0.8 ? 'Commercial' : 'Residential',
-                status: Math.random() > 0.6 ? (Math.random() > 0.5 ? 'sold' : (Math.random() > 0.5 ? 'overdue' : 'critical')) : 'available',
-                size: '120 Sq Yd',
-                owner: Math.random() > 0.6 ? {
-                    name: `Owner ${plotId}`,
-                    phone: `0300-${Math.floor(1000000 + Math.random() * 9000000)}`,
-                    plan: 'Standard - 2 Bed',
-                    ref: `SUN-${plotId}88`,
-                    lastPayment: '01/01/2023',
-                    daysPending: Math.floor(Math.random() * 40)
-                } : null
-            };
-            plots.push({ ...mockData, r, c });
-        }
-    }
-    return plots;
-};
-
-const ALL_PLOTS = generatePlots();
-
-export function PlotManagementMap({ hideHeader = false }: { hideHeader?: boolean }) {
-    const [scale, setScale] = useState(1);
-    const [position, setPosition] = useState({ x: 0, y: 0 });
-    const [isDragging, setIsDragging] = useState(false);
+    const [scale, setScale] = useState(0.8);
+    const [position, setPosition] = useState({ x: 50, y: 50 });
+    const [isDraggingMap, setIsDraggingMap] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-    const [selectedPlot, setSelectedPlot] = useState<any | null>(null);
-    const [filter, setFilter] = useState('all');
+
+    const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [isAddingMode, setIsAddingMode] = useState(false);
+
     const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
 
     const mapRef = useRef<HTMLDivElement>(null);
 
-    // Zoom Handlers
-    const handleZoomIn = () => setScale(prev => Math.min(prev + 0.2, 3));
-    const handleZoomOut = () => setScale(prev => Math.max(prev - 0.2, 0.5));
-    const handleResetZoom = () => { setScale(1); setPosition({ x: 0, y: 0 }); };
+    // --- Data Fetching ---
+    useEffect(() => {
+        const fetchProjects = async () => {
+            try {
+                const res = await fetch('/api/projects');
+                const data = await res.json();
+                setProjects(data);
+                if (data.length > 0) setSelectedProjectId(data[0].id);
+            } catch (error) {
+                toast.error("Failed to load societies");
+            }
+        };
+        fetchProjects();
+    }, []);
 
-    // Pan Handlers
+    useEffect(() => {
+        if (!selectedProjectId) return;
+        const fetchUnits = async () => {
+            setIsLoading(true);
+            try {
+                const res = await fetch(`/api/units?projectId=${selectedProjectId}`);
+                const data = await res.json();
+                // Filter by projectId just in case the generic API returns all for tenant
+                setUnits(data.filter((u: any) => u.projectId === selectedProjectId));
+            } catch (error) {
+                toast.error("Failed to load blocks");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchUnits();
+    }, [selectedProjectId]);
+
+    // --- Handlers ---
+    const handleZoomIn = () => setScale(prev => Math.min(prev + 0.2, 3));
+    const handleZoomOut = () => setScale(prev => Math.max(prev - 0.2, 0.2));
+    const handleResetZoom = () => { setScale(0.8); setPosition({ x: 50, y: 50 }); };
+
     const handleMouseDown = (e: React.MouseEvent) => {
-        setIsDragging(true);
+        if (isAddingMode) return;
+        setIsDraggingMap(true);
         setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
     };
 
     const handleMouseMove = (e: React.MouseEvent) => {
-        if (!isDragging) return;
+        if (!isDraggingMap) return;
         setPosition({
             x: e.clientX - dragStart.x,
             y: e.clientY - dragStart.y
         });
     };
 
-    const handleMouseUp = () => setIsDragging(false);
+    const handleMouseUp = () => setIsDraggingMap(false);
 
-    // Filter Logic
-    const filteredPlots = ALL_PLOTS.filter(plot => {
-        if (filter !== 'all' && plot.status !== filter) return false;
-        if (searchTerm && !plot.id.includes(searchTerm) && (!plot.owner || !plot.owner.name.toLowerCase().includes(searchTerm.toLowerCase()))) {
-            return false;
+    const handleMapClick = async (e: React.MouseEvent<SVGSVGElement>) => {
+        if (!isAddingMode || !selectedProjectId) return;
+
+        // Calculate SVG coordinates
+        const svg = e.currentTarget;
+        const pt = svg.createSVGPoint();
+        pt.x = e.clientX;
+        pt.y = e.clientY;
+        const cursorPt = pt.matrixTransform(svg.getScreenCTM()?.inverse());
+
+        const newUnitData = {
+            unitNumber: `B-${units.length + 1}`,
+            projectId: selectedProjectId,
+            x: cursorPt.x - 30, // Center the new block
+            y: cursorPt.y - 50,
+            width: 60,
+            height: 100,
+            shapeType: 'rect',
+            status: 'available'
+        };
+
+        try {
+            const res = await fetch('/api/units', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newUnitData)
+            });
+            const data = await res.json();
+            setUnits([...units, data]);
+            toast.success("Block created successfully");
+            setIsAddingMode(false);
+        } catch (error) {
+            toast.error("Failed to create block");
         }
-        return true;
+    };
+
+    const handleUpdateUnit = async (id: number, updates: Partial<Unit>) => {
+        try {
+            const res = await fetch(`/api/units/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updates)
+            });
+            const data = await res.json();
+            setUnits(units.map(u => u.id === id ? data : u));
+            if (selectedUnit?.id === id) setSelectedUnit(data);
+            toast.success("Block updated");
+        } catch (error) {
+            toast.error("Update failed");
+        }
+    };
+
+    const handleDeleteUnit = async (id: number) => {
+        if (!confirm("Are you sure you want to delete this block?")) return;
+        try {
+            await fetch(`/api/units/${id}`, { method: 'DELETE' });
+            setUnits(units.filter(u => u.id !== id));
+            setSelectedUnit(null);
+            toast.success("Block deleted");
+        } catch (error) {
+            toast.error("Delete failed");
+        }
+    };
+
+    const filteredUnits = units.filter(u => {
+        const matchesSearch = u.unitNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (u.ownerName && u.ownerName.toLowerCase().includes(searchTerm.toLowerCase()));
+        const matchesFilter = statusFilter === 'all' || u.status === statusFilter || (statusFilter === 'rented' && u.isRented);
+        return matchesSearch && matchesFilter;
     });
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
+    const getStatusColor = (unit: Unit) => {
+        if (unit.isRented) return 'fill-blue-500 stroke-blue-600';
+        switch (unit.status) {
             case 'available': return 'fill-white stroke-slate-300';
+            case 'booked': return 'fill-amber-400 stroke-amber-500';
             case 'sold': return 'fill-emerald-500 stroke-emerald-600';
-            case 'overdue': return 'fill-amber-500 stroke-amber-600';
-            case 'critical': return 'fill-rose-500 stroke-rose-600';
+            case 'reserved': return 'fill-purple-500 stroke-purple-600';
             default: return 'fill-slate-100 stroke-slate-300';
         }
     };
 
     return (
-        <div className={hideHeader ? "h-[750px] flex flex-col pt-0" : "h-[calc(100vh-8rem)] flex flex-col pt-0"}>
-            {/* Header Area */}
-            {!hideHeader && (
-                <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div className="h-[calc(100vh-8rem)] flex flex-col pt-0 font-sans">
+            {/* --- Global Action Bar --- */}
+            <div className="mb-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                    <div className="bg-primary/10 p-3 rounded-2xl">
+                        <Map className="w-8 h-8 text-primary" />
+                    </div>
                     <div>
-                        <h1 className="text-3xl font-bold text-slate-800 tracking-tight flex items-center gap-3">
-                            <Map className="w-8 h-8 text-primary" />
-                            Interactive Map View
-                        </h1>
-                        <p className="text-slate-500 font-medium mt-1">
-                            Complete Plot Management System for Sunrise Society
-                        </p>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                        <div className="relative">
-                            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                            <input
-                                type="text"
-                                placeholder="Search plots or owners..."
-                                className="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary w-64"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
+                        <h1 className="text-3xl font-black text-slate-800 tracking-tight">Society Map Hub</h1>
+                        <div className="flex items-center gap-2">
+                            <select
+                                value={selectedProjectId || ''}
+                                onChange={(e) => setSelectedProjectId(Number(e.target.value))}
+                                className="text-sm font-bold text-slate-500 bg-transparent border-none focus:ring-0 cursor-pointer hover:text-primary transition-colors p-0"
+                            >
+                                {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                            </select>
                         </div>
-                        <select
-                            className="px-4 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
-                            value={filter}
-                            onChange={(e) => setFilter(e.target.value)}
-                        >
-                            <option value="all">All Status</option>
-                            <option value="available">Available</option>
-                            <option value="sold">Sold / Clear</option>
-                            <option value="overdue">Payment Overdue</option>
-                            <option value="critical">Critical Arrears</option>
-                        </select>
-                    </div>
-                </div>
-            )}
-
-            {/* Map Container */}
-            <div className="flex-1 bg-slate-100 rounded-2xl border border-slate-200 overflow-hidden relative shadow-inner flex">
-
-                {/* Tools Overlay */}
-                <div className="absolute left-4 top-4 z-10 bg-white/90 backdrop-blur-md border border-slate-200 rounded-xl shadow-lg p-2 flex flex-col gap-2">
-                    <button onClick={handleZoomIn} className="p-2 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors" title="Zoom In">
-                        <ZoomIn className="w-5 h-5" />
-                    </button>
-                    <button onClick={handleZoomOut} className="p-2 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors" title="Zoom Out">
-                        <ZoomOut className="w-5 h-5" />
-                    </button>
-                    <div className="h-px bg-slate-200 my-1" />
-                    <button onClick={handleResetZoom} className="p-2 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors" title="Reset View">
-                        <Maximize className="w-5 h-5" />
-                    </button>
-                </div>
-
-                {/* Legend Overlay */}
-                <div className="absolute right-4 top-4 z-10 bg-white/90 backdrop-blur-md border border-slate-200 rounded-xl shadow-lg p-4 flex flex-col gap-3">
-                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Status Legend</h3>
-                    <div className="flex items-center gap-2 text-sm text-slate-700 font-medium">
-                        <div className="w-4 h-4 rounded border border-slate-300 bg-white" /> Available
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-slate-700 font-medium">
-                        <div className="w-4 h-4 rounded border border-emerald-600 bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]" /> Sold / Clear
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-slate-700 font-medium">
-                        <div className="w-4 h-4 rounded border border-amber-600 bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.3)]" /> Payment Overdue
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-slate-700 font-medium">
-                        <div className="w-4 h-4 rounded border border-rose-600 bg-rose-500 shadow-[0_0_10px_rgba(225,29,72,0.3)]" /> Critical / Defaulter
                     </div>
                 </div>
 
-                {/* The Interactive Map Surface */}
+                <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm">
+                    <div className="relative">
+                        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                            type="text"
+                            placeholder="Find Block or Owner..."
+                            className="pl-9 pr-4 py-2 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 w-48 lg:w-64 font-medium"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+
+                    <div className="h-6 w-px bg-slate-100 mx-2" />
+
+                    <button
+                        onClick={() => { setIsAddingMode(!isAddingMode); setIsEditMode(false); }}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${isAddingMode ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}
+                    >
+                        <Plus className="w-4 h-4" /> Add Block
+                    </button>
+                    <button
+                        onClick={() => { setIsEditMode(!isEditMode); setIsAddingMode(false); }}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${isEditMode ? 'bg-primary text-white shadow-lg' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}
+                    >
+                        <Settings className="w-4 h-4" /> Layout Mode
+                    </button>
+
+                    <div className="h-6 w-px bg-slate-100 mx-2" />
+
+                    <select
+                        className="px-4 py-2 bg-slate-50 rounded-xl text-sm font-bold text-slate-600 border-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                    >
+                        <option value="all">All Units</option>
+                        <option value="available">Available</option>
+                        <option value="sold">Sold</option>
+                        <option value="rented">Rented</option>
+                    </select>
+                </div>
+            </div>
+
+            {/* --- Main Interactive Area --- */}
+            <div className="flex-1 bg-slate-100 rounded-[2.5rem] border border-slate-200 overflow-hidden relative shadow-inner flex">
+
+                {/* Navigation Tools */}
+                <div className="absolute left-6 top-6 z-10 flex flex-col gap-2">
+                    <div className="bg-white/90 backdrop-blur-md border border-slate-200 rounded-2xl shadow-xl p-2 flex flex-col gap-2">
+                        <button onClick={handleZoomIn} className="p-3 hover:bg-slate-100 rounded-xl text-slate-600 transition-all hover:scale-110 active:scale-90" title="Zoom In">
+                            <ZoomIn className="w-5 h-5" />
+                        </button>
+                        <button onClick={handleZoomOut} className="p-3 hover:bg-slate-100 rounded-xl text-slate-600 transition-all hover:scale-110 active:scale-90" title="Zoom Out">
+                            <ZoomOut className="w-5 h-5" />
+                        </button>
+                        <div className="h-px bg-slate-100 mx-2" />
+                        <button onClick={handleResetZoom} className="p-3 hover:bg-slate-100 rounded-xl text-slate-600 transition-all hover:scale-110 active:scale-90" title="Center Map">
+                            <Maximize className="w-5 h-5" />
+                        </button>
+                    </div>
+
+                    {isAddingMode && (
+                        <div className="bg-indigo-600 text-white px-4 py-3 rounded-2xl shadow-xl animate-bounce text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                            <MousePointer2 className="w-4 h-4" /> Click on Map to Place Block
+                        </div>
+                    )}
+                </div>
+
+                {/* Status Legend */}
+                <div className="absolute right-6 top-6 z-10 bg-white/80 backdrop-blur-md border border-slate-200 rounded-3xl shadow-xl p-6 hidden md:flex flex-col gap-4">
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Portfolio Legend</h3>
+                    <div className="flex items-center gap-3 text-xs font-bold text-slate-700">
+                        <div className="w-5 h-5 rounded-lg border-2 border-slate-200 bg-white" /> Available
+                    </div>
+                    <div className="flex items-center gap-3 text-xs font-bold text-slate-700">
+                        <div className="w-5 h-5 rounded-lg border-2 border-emerald-600 bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]" /> Sold Asset
+                    </div>
+                    <div className="flex items-center gap-3 text-xs font-bold text-slate-700">
+                        <div className="w-5 h-5 rounded-lg border-2 border-blue-600 bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]" /> Rented
+                    </div>
+                    <div className="flex items-center gap-3 text-xs font-bold text-slate-700">
+                        <div className="w-5 h-5 rounded-lg border-2 border-amber-500 bg-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.3)]" /> Booked
+                    </div>
+                </div>
+
+                {/* INTERACTIVE SVG SURFACE */}
                 <div
                     ref={mapRef}
-                    className="w-full h-full cursor-grab active:cursor-grabbing overflow-hidden relative touch-none bg-slate-50 [background-image:radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:24px_24px]"
+                    className={`w-full h-full relative touch-none bg-slate-50 [background-image:radial-gradient(#e5e7eb_1.5px,transparent_1.5px)] [background-size:40px_40px]
+                                ${isDraggingMap ? 'cursor-grabbing' : isAddingMode ? 'cursor-crosshair' : 'cursor-grab'}`}
                     onMouseDown={handleMouseDown}
                     onMouseMove={handleMouseMove}
                     onMouseUp={handleMouseUp}
                     onMouseLeave={handleMouseUp}
                 >
                     <div
-                        className="absolute w-[2000px] h-[1200px] origin-center transition-transform duration-75 ease-out"
+                        className="absolute origin-center transition-transform duration-75 ease-out"
                         style={{
                             transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
                         }}
                     >
-                        <svg className="w-full h-full drop-shadow-2xl" viewBox="0 0 2000 1200">
-                            {/* Base Society Grounds / Layout Blocks */}
-                            <path d="M 200 150 L 1800 150 L 1900 1050 L 100 1050 Z" className="fill-slate-50 opacity-90 stroke-slate-200 stroke-2" />
+                        <svg
+                            className="w-[3000px] h-[2000px] drop-shadow-2xl overflow-visible"
+                            viewBox="0 0 3000 2000"
+                            onClick={handleMapClick}
+                        >
+                            {/* Society Layout Background */}
+                            <rect width="3000" height="2000" fill="transparent" />
+                            <path d="M 100 200 L 2800 100 L 2900 1800 L 200 1900 Z" className="fill-slate-100/50 stroke-slate-200 stroke-[4]" />
 
-                            {/* Block A Label */}
-                            <text x="300" y="220" className="text-4xl font-bold fill-slate-300 uppercase tracking-widest font-sans">Sunrise Society Block A</text>
+                            {/* Render All Dynamic Blocks */}
+                            {filteredUnits.map((unit) => {
+                                const isSelected = selectedUnit?.id === unit.id;
 
-                            {/* Render Plots */}
-                            <g className="plots-group" transform="rotate(-5, 1000, 600) translate(250, 300)">
-                                {filteredPlots.map((plot) => {
-                                    const plotWidth = 60;
-                                    const plotHeight = 100;
-                                    const gap = 8;
-
-                                    // Custom positioning logic based on r, c coordinates to mimic the screenshot's angled rows
-                                    const xOffset = plot.c * (plotWidth + gap) + (plot.r * 20);
-                                    const yOffset = plot.r * (plotHeight + gap * 4);
-
-                                    const isSelected = selectedPlot?.id === plot.id;
-                                    const isAvailable = plot.status === 'available';
-
-                                    return (
-                                        <g
-                                            key={plot.id}
-                                            transform={`translate(${xOffset}, ${yOffset})`}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setSelectedPlot(plot);
-                                            }}
-                                            className="cursor-pointer transition-all duration-300"
-                                        >
-                                            <rect
-                                                width={plotWidth}
-                                                height={plotHeight}
-                                                rx="4"
-                                                className={`${getStatusColor(plot.status)} hover:brightness-110 transition-all ${isSelected ? 'stroke-4 stroke-primary shadow-2xl drop-shadow-[0_0_15px_rgba(0,150,136,0.6)]' : ''}`}
-                                                strokeWidth={isSelected ? "4" : "1.5"}
+                                return (
+                                    <g
+                                        key={unit.id}
+                                        transform={`translate(${unit.x}, ${unit.y})`}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedUnit(unit);
+                                        }}
+                                        className="cursor-pointer group"
+                                    >
+                                        {unit.shapeType === 'circle' ? (
+                                            <motion.circle
+                                                cx={unit.width / 2}
+                                                cy={unit.height / 2}
+                                                r={Math.min(unit.width, unit.height) / 2}
+                                                className={`${getStatusColor(unit)} transition-all duration-300 ${isSelected ? 'stroke-[6] stroke-primary' : 'stroke-2 hover:stroke-primary/50'}`}
                                             />
-                                            {/* Plot Number */}
-                                            <text
-                                                x={plotWidth / 2}
-                                                y={plotHeight / 2 + 5}
-                                                textAnchor="middle"
-                                                className={`text-[16px] font-bold pointer-events-none ${isAvailable ? 'fill-slate-400' : 'fill-white'}`}
-                                                transform={`rotate(-90, ${plotWidth / 2}, ${plotHeight / 2})`}
-                                            >
-                                                {plot.id}
-                                            </text>
-                                        </g>
-                                    );
-                                })}
-                            </g>
+                                        ) : unit.shapeType === 'house' ? (
+                                            <motion.path
+                                                d={`M ${unit.width / 2} 0 L ${unit.width} ${unit.height / 3} L ${unit.width} ${unit.height} L 0 ${unit.height} L 0 ${unit.height / 3} Z`}
+                                                className={`${getStatusColor(unit)} transition-all duration-300 ${isSelected ? 'stroke-[6] stroke-primary' : 'stroke-2 hover:stroke-primary/50'}`}
+                                            />
+                                        ) : (
+                                            <motion.rect
+                                                width={unit.width}
+                                                height={unit.height}
+                                                rx="8"
+                                                className={`${getStatusColor(unit)} transition-all duration-300 ${isSelected ? 'stroke-[6] stroke-primary' : 'stroke-2 hover:stroke-primary/50'}`}
+                                            />
+                                        )}
+                                        <text
+                                            x={unit.width / 2}
+                                            y={unit.height / 2 + 5}
+                                            textAnchor="middle"
+                                            className={`text-[12px] font-black pointer-events-none select-none ${unit.status === 'available' ? 'fill-slate-400' : 'fill-white'}`}
+                                            transform={`rotate(-90, ${unit.width / 2}, ${unit.height / 2})`}
+                                        >
+                                            {unit.unitNumber}
+                                        </text>
 
-                            {/* Landmarks / Mosque / Parks */}
-                            <g transform="translate(450, 700)">
-                                <rect width="300" height="200" rx="10" className="fill-emerald-50/80 stroke-emerald-200 stroke-2" />
-                                <text x="150" y="110" textAnchor="middle" className="text-xl font-bold fill-emerald-600/50 uppercase tracking-widest">Central Park</text>
-                            </g>
-                            <g transform="translate(1300, 300)">
-                                <rect width="250" height="250" rx="125" className="fill-blue-50/80 stroke-blue-200 stroke-2" />
-                                <text x="125" y="130" textAnchor="middle" className="text-xl font-bold fill-blue-600/50 uppercase tracking-widest">Grand Mosque</text>
-                            </g>
+                                        {/* Action Indicators for Edit Mode */}
+                                        {isEditMode && isSelected && (
+                                            <g transform={`translate(${unit.width + 10}, 0)`}>
+                                                <rect width="20" height="20" rx="4" fill="#6366f1" className="cursor-move" />
+                                                <Move className="w-3 h-3 text-white" x="4" y="4" />
+                                            </g>
+                                        )}
+                                    </g>
+                                );
+                            })}
 
+                            <text x="500" y="300" className="text-6xl font-black fill-slate-200 uppercase tracking-[0.5em] pointer-events-none">{projects.find(p => p.id === selectedProjectId)?.name}</text>
                         </svg>
                     </div>
-                </div >
+                </div>
 
-                {/* Animated Plot Detail Panel (Floating over map) */}
+                {/* --- UNIT INTELLIGENCE PANEL --- */}
                 <AnimatePresence>
-                    {
-                        selectedPlot && (
-                            <motion.div
-                                initial={{ opacity: 0, x: 20, scale: 0.95 }}
-                                animate={{ opacity: 1, x: 0, scale: 1 }}
-                                exit={{ opacity: 0, x: 20, scale: 0.95 }}
-                                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                                className="absolute right-6 top-6 bottom-6 w-96 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200/60 overflow-hidden flex flex-col z-20"
-                            >
-                                <div className="bg-slate-900 text-white p-5 flex justify-between items-start relative overflow-hidden">
-                                    <div className="absolute -right-10 -top-10 w-40 h-40 bg-primary/20 rounded-full blur-2xl pointer-events-none"></div>
-                                    <div className="relative z-10">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <Home className="w-4 h-4 text-primary" />
-                                            <span className="text-xs font-bold text-primary uppercase tracking-wider">Plot Details</span>
+                    {selectedUnit && (
+                        <motion.div
+                            initial={{ opacity: 0, x: 40, scale: 0.9 }}
+                            animate={{ opacity: 1, x: 0, scale: 1 }}
+                            exit={{ opacity: 0, x: 40, scale: 0.9 }}
+                            className="absolute right-8 top-8 bottom-8 w-[420px] bg-white/95 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.2)] border border-white/20 overflow-hidden flex flex-col z-50"
+                        >
+                            {/* Panel Header */}
+                            <div className="bg-slate-900 text-white p-8 relative overflow-hidden">
+                                <div className="absolute right-0 top-0 w-64 h-64 bg-primary/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                                <div className="relative z-10 flex justify-between items-start">
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-2 text-primary">
+                                            <Home className="w-5 h-5" />
+                                            <span className="text-[10px] font-black uppercase tracking-widest">Property Intelligence</span>
                                         </div>
-                                        <h2 className="text-3xl font-bold font-sans tracking-tight">Plot #{selectedPlot.id}</h2>
-                                        <p className="text-slate-400 text-sm">{selectedPlot.type} • {selectedPlot.size}</p>
+                                        <h2 className="text-4xl font-black tracking-tight">{selectedUnit.unitNumber}</h2>
+                                        <p className="text-slate-400 font-medium text-sm mt-1">{selectedUnit.shapeType === 'rect' ? 'Standard Block' : 'Custom Plot'}</p>
                                     </div>
                                     <button
-                                        onClick={() => setSelectedPlot(null)}
-                                        className="p-1.5 bg-white/10 hover:bg-rose-500/20 hover:text-rose-400 rounded-lg transition-colors relative z-10"
+                                        onClick={() => setSelectedUnit(null)}
+                                        className="p-3 bg-white/10 hover:bg-rose-500/20 hover:text-rose-400 rounded-2xl transition-all"
                                     >
-                                        <X className="w-5 h-5" />
+                                        <X className="w-6 h-6" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-8 space-y-8">
+                                {/* Shape & Status Protocol */}
+                                <div className="space-y-4">
+                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Asset Protocols</h3>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-slate-400 ml-1">SHAPE ARCHITECTURE</label>
+                                            <select
+                                                value={selectedUnit.shapeType}
+                                                onChange={(e) => handleUpdateUnit(selectedUnit.id, { shapeType: e.target.value })}
+                                                className="w-full bg-slate-50 px-4 py-3 rounded-xl border border-slate-100 text-xs font-black uppercase tracking-widest text-slate-600 outline-none"
+                                            >
+                                                <option value="rect">■ Rectangle</option>
+                                                <option value="circle">● Circle</option>
+                                                <option value="house">⌂ House</option>
+                                            </select>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-slate-400 ml-1">MARKET STATUS</label>
+                                            <select
+                                                value={selectedUnit.status}
+                                                onChange={(e) => handleUpdateUnit(selectedUnit.id, { status: e.target.value })}
+                                                className="w-full bg-slate-50 px-4 py-3 rounded-xl border border-slate-100 text-xs font-black uppercase tracking-widest text-slate-600 outline-none"
+                                            >
+                                                <option value="available">Available</option>
+                                                <option value="booked">Booked</option>
+                                                <option value="sold">Sold</option>
+                                                <option value="reserved">Reserved</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={async () => {
+                                            if (!selectedUnit.ownerName) return toast.error("Assign an owner first");
+                                            try {
+                                                const res = await fetch('/api/invoices', {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({
+                                                        invoiceNumber: `INV-${Date.now().toString().slice(-6)}`,
+                                                        customerName: selectedUnit.ownerName,
+                                                        amount: selectedUnit.price || 0,
+                                                        items: [{ description: `Purchase of ${selectedUnit.unitNumber}`, quantity: 1, price: selectedUnit.price || 0, total: selectedUnit.price || 0 }]
+                                                    })
+                                                });
+                                                if (res.ok) {
+                                                    await handleUpdateUnit(selectedUnit.id, { status: 'sold' });
+                                                    toast.success("Sale processed & ledger updated!");
+                                                }
+                                            } catch (e) { toast.error("Sale failed"); }
+                                        }}
+                                        className="w-full py-4 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <CreditCard className="w-4 h-4" /> Finalize Legal Sale
                                     </button>
                                 </div>
 
-                                <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
-                                    {selectedPlot.status === 'available' ? (
-                                        <div className="flex flex-col items-center justify-center h-full text-center space-y-4 opacity-70">
-                                            <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center">
-                                                <AlertCircle className="w-10 h-10 text-slate-400" />
-                                            </div>
-                                            <div>
-                                                <h3 className="text-xl font-bold text-slate-700">Plot Available</h3>
-                                                <p className="text-sm text-slate-500 max-w-xs mt-2">This plot is currently available for booking. Assign a lead or process a direct booking.</p>
-                                            </div>
-                                            <button className="mt-4 px-6 py-2.5 bg-primary text-white rounded-lg font-bold text-sm shadow-lg shadow-primary/30 hover:scale-105 active:scale-95 transition-all w-full uppercase tracking-wide">
-                                                Initiate Booking
-                                            </button>
+                                {/* Ownership Details */}
+                                <div className="space-y-4">
+                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Financial Custodian</h3>
+                                    <div className="bg-slate-50 rounded-[2rem] p-6 border border-slate-100 space-y-5">
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-slate-400 ml-1">OWNER NAME</label>
+                                            <input
+                                                defaultValue={selectedUnit.ownerName || ''}
+                                                onBlur={(e) => handleUpdateUnit(selectedUnit.id, { ownerName: e.target.value })}
+                                                placeholder="Unassigned"
+                                                className="w-full bg-white px-5 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 outline-none"
+                                            />
                                         </div>
-                                    ) : (
-                                        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-slate-400 ml-1">MONTHLY RENT (PKR)</label>
+                                            <input
+                                                type="number"
+                                                defaultValue={selectedUnit.rentAmount || ''}
+                                                onBlur={(e) => handleUpdateUnit(selectedUnit.id, { rentAmount: parseFloat(e.target.value) })}
+                                                placeholder="0.00"
+                                                className="w-full bg-white px-5 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 outline-none"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
 
-                                            {/* Owner Info Card */}
-                                            <div className="relative">
-                                                {/* Days Badge strictly matching the image design */}
-                                                <div className={`absolute -top-4 -right-2 px-4 py-1.5 rounded-l-full rounded-tr-none font-bold text-white text-sm shadow-lg ${selectedPlot.status === 'sold' ? 'bg-emerald-500' :
-                                                    selectedPlot.status === 'overdue' ? 'bg-amber-500' : 'bg-rose-500'
-                                                    }`}>
-                                                    {selectedPlot.owner.daysPending} Days
-                                                </div>
-
-                                                <div className="bg-gradient-to-br from-slate-50 to-white border border-slate-100 p-5 rounded-2xl shadow-sm flex items-center gap-4">
-                                                    <div className="w-16 h-16 rounded-full bg-slate-200 overflow-hidden border-2 border-white shadow-md shrink-0">
-                                                        {/* Avatar placeholder resembling image */}
-                                                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=b6e3f4" alt="Avatar" className="w-full h-full object-cover" />
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="text-lg font-bold text-slate-800 leading-tight">{selectedPlot.owner.name}</h3>
-                                                        <p className="text-sm text-slate-500 mt-0.5">{selectedPlot.owner.plan}</p>
-                                                        <div className="text-xs font-semibold text-primary mt-1 px-2 py-0.5 bg-primary/10 rounded inline-block">
-                                                            {selectedPlot.owner.ref}
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                {/* Visual Layout (If in Layout Mode) */}
+                                {isEditMode && (
+                                    <div className="space-y-4 animate-in fade-in slide-in-from-top-4">
+                                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dimension Protocol</h3>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-bold text-slate-400">Width</label>
+                                                <input type="number" value={selectedUnit.width} onChange={(e) => handleUpdateUnit(selectedUnit.id, { width: parseFloat(e.target.value) })} className="w-full bg-slate-50 px-4 py-2 rounded-lg text-sm font-bold" />
                                             </div>
-
-                                            {/* Detailed Specs list */}
-                                            <div className="space-y-4">
-                                                <div className="flex justify-between items-center py-3 border-b border-slate-100">
-                                                    <div className="flex items-center gap-3 text-slate-500">
-                                                        <Phone className="w-4 h-4" />
-                                                        <span className="text-sm font-medium">Mobile</span>
-                                                    </div>
-                                                    <span className="text-sm font-bold text-slate-800">{selectedPlot.owner.phone}</span>
-                                                </div>
-
-                                                <div className="flex justify-between items-center py-3 border-b border-slate-100">
-                                                    <div className="flex items-center gap-3 text-slate-500">
-                                                        <CreditCard className="w-4 h-4" />
-                                                        <span className="text-sm font-medium">Last Payment</span>
-                                                    </div>
-                                                    <span className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                                                        {selectedPlot.owner.lastPayment}
-                                                        {selectedPlot.status !== 'sold' && (
-                                                            <AlertCircle className={`w-4 h-4 ${selectedPlot.status === 'overdue' ? 'text-amber-500' : 'text-rose-500'}`} />
-                                                        )}
-                                                    </span>
-                                                </div>
-
-                                                <div className="flex justify-between items-center py-3 border-b border-slate-100">
-                                                    <div className="flex items-center gap-3 text-slate-500">
-                                                        <Calendar className="w-4 h-4" />
-                                                        <span className="text-sm font-medium">Payment Status</span>
-                                                    </div>
-                                                    <span className={`text-xs font-bold uppercase tracking-wider px-2 py-1 rounded ${selectedPlot.status === 'sold' ? 'bg-emerald-100 text-emerald-700' :
-                                                        selectedPlot.status === 'overdue' ? 'bg-amber-100 text-amber-700' :
-                                                            'bg-rose-100 text-rose-700'
-                                                        }`}>
-                                                        {selectedPlot.status === 'sold' ? 'Clear' : selectedPlot.status}
-                                                    </span>
-                                                </div>
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-bold text-slate-400">Height</label>
+                                                <input type="number" value={selectedUnit.height} onChange={(e) => handleUpdateUnit(selectedUnit.id, { height: parseFloat(e.target.value) })} className="w-full bg-slate-50 px-4 py-2 rounded-lg text-sm font-bold" />
                                             </div>
-
-                                            {/* Action Buttons */}
-                                            <div className="grid grid-cols-2 gap-3 pt-4">
-                                                <button className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-xs transition-colors border border-slate-200 shadow-sm uppercase">
-                                                    <CreditCard className="w-4 h-4" /> View Ledger
-                                                </button>
-                                                <button className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-bold text-xs transition-colors shadow-sm uppercase ${selectedPlot.status === 'overdue' || selectedPlot.status === 'critical'
-                                                    ? 'bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200'
-                                                    : 'bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20'
-                                                    }`}>
-                                                    <Mail className="w-4 h-4" />
-                                                    {selectedPlot.status === 'sold' ? 'Send Update' : 'Send Reminder'}
-                                                </button>
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-bold text-slate-400">X Position</label>
+                                                <input type="number" value={selectedUnit.x} onChange={(e) => handleUpdateUnit(selectedUnit.id, { x: parseFloat(e.target.value) })} className="w-full bg-slate-50 px-4 py-2 rounded-lg text-sm font-bold" />
                                             </div>
-                                        </div >
-                                    )
-                                    }
-                                </div >
-                            </motion.div >
-                        )
-                    }
-                </AnimatePresence >
-            </div >
-        </div >
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-bold text-slate-400">Y Position</label>
+                                                <input type="number" value={selectedUnit.y} onChange={(e) => handleUpdateUnit(selectedUnit.id, { y: parseFloat(e.target.value) })} className="w-full bg-slate-50 px-4 py-2 rounded-lg text-sm font-bold" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Panel Footer */}
+                            <div className="p-8 bg-slate-50 border-t border-slate-100 flex gap-3">
+                                <button
+                                    onClick={() => handleDeleteUnit(selectedUnit.id)}
+                                    className="flex-1 py-4 bg-white text-rose-600 border border-rose-100 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-rose-50 transition-all flex items-center justify-center gap-2"
+                                >
+                                    <Trash2 className="w-4 h-4" /> Delete Block
+                                </button>
+                                <button
+                                    className="flex-1 py-4 bg-primary text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
+                                >
+                                    <Save className="w-4 h-4" /> Save Intel
+                                </button>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+        </div>
     );
 }

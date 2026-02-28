@@ -55,7 +55,7 @@ export default function BrandingPortalPage() {
                                 </div>
                                 <div className="bg-white border text-center border-slate-200 rounded-full px-4 py-1.5 text-sm text-slate-400 w-1/2 flex items-center justify-center gap-2">
                                     <Globe className="w-3 h-3" />
-                                    fortify.biz/app/brandingPortal/
+                                    realerpcrm.com/app/brandingPortal/
                                 </div>
                                 <div className="w-20"></div> {/* Spacer for balance */}
                             </div>

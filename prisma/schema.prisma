@@ -61,6 +61,7 @@ model Project {
   type        ProjectType
   location    String?     @db.VarChar(255)
   description String?     @db.Text
+  mapImage    String?     @map("map_image") @db.Text
   createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamp(0)
   tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "projects_ibfk_1")
   units       Unit[]
@@ -76,6 +77,20 @@ model Unit {
   unitNumber String      @map("unit_number") @db.VarChar(50)
   status     UnitStatus? @default(available)
   price      Decimal?    @db.Decimal(15, 2)
+  
+  // Spatial Data for Map View
+  x          Float?      @default(0)
+  y          Float?      @default(0)
+  width      Float?      @default(100)
+  height     Float?      @default(100)
+  shapeType  String?     @default("rect") @map("shape_type") @db.VarChar(50)
+  
+  // Ownership & Rental Data
+  ownerName  String?     @map("owner_name") @db.VarChar(255)
+  ownerPhone String?     @map("owner_phone") @db.VarChar(50)
+  isRented   Boolean     @default(false) @map("is_rented")
+  rentAmount Decimal?    @map("rent_amount") @db.Decimal(15, 2)
+
   created_at DateTime    @default(now()) @db.Timestamp(0)
   bookings   Booking[]
   tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "units_ibfk_1")

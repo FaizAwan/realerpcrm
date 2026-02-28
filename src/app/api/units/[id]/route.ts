@@ -53,7 +53,18 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
                 unitNumber: body.unitNumber ?? existingUnit.unitNumber,
                 projectId: body.projectId ?? existingUnit.projectId,
                 status: body.status ?? existingUnit.status,
-                price: body.price !== undefined ? (body.price ? parseFloat(body.price) : null) : existingUnit.price
+                price: body.price !== undefined ? (body.price ? parseFloat(body.price) : null) : existingUnit.price,
+                // Map Data Updates
+                x: body.x !== undefined ? parseFloat(body.x) : existingUnit.x,
+                y: body.y !== undefined ? parseFloat(body.y) : existingUnit.y,
+                width: body.width !== undefined ? parseFloat(body.width) : existingUnit.width,
+                height: body.height !== undefined ? parseFloat(body.height) : existingUnit.height,
+                shapeType: body.shapeType ?? existingUnit.shapeType,
+                // Ownership & Rental Data
+                ownerName: body.ownerName !== undefined ? body.ownerName : existingUnit.ownerName,
+                ownerPhone: body.ownerPhone !== undefined ? body.ownerPhone : existingUnit.ownerPhone,
+                isRented: body.isRented !== undefined ? !!body.isRented : existingUnit.isRented,
+                rentAmount: body.rentAmount !== undefined ? (body.rentAmount ? parseFloat(body.rentAmount) : null) : existingUnit.rentAmount
             }
         });
         return NextResponse.json(unit);
