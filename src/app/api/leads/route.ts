@@ -19,6 +19,7 @@ export async function GET() {
 
         return NextResponse.json(leads);
     } catch (error) {
+        console.error("[LEADS_GET]", error);
         return NextResponse.json({ error: "Failed to fetch leads" }, { status: 500 });
     }
 }

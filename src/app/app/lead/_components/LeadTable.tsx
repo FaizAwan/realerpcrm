@@ -93,18 +93,18 @@ export function LeadTable({ leads, onEdit, onDelete, onStatusChange }: LeadTable
                                         onChange={(e) => onStatusChange(lead.id, e.target.value)}
                                         className={cn(
                                             "pl-3 pr-8 py-2 rounded-xl text-[10px] font-black uppercase border cursor-pointer outline-none appearance-none text-center shadow-sm w-full max-w-[130px]",
-                                            lead.status === 'New lead' ? "bg-blue-50 text-blue-600 border-blue-100" :
-                                                lead.status === 'Contacted' ? "bg-amber-50 text-amber-600 border-amber-100" :
-                                                    lead.status === 'Qualified' ? "bg-purple-50 text-purple-600 border-purple-100" :
-                                                        lead.status === 'Won / Closed' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
+                                            lead.status === 'new' ? "bg-blue-50 text-blue-600 border-blue-100" :
+                                                lead.status === 'contacted' ? "bg-amber-50 text-amber-600 border-amber-100" :
+                                                    lead.status === 'qualified' ? "bg-purple-50 text-purple-600 border-purple-100" :
+                                                        lead.status === 'won' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
                                                             "bg-rose-50 text-rose-600 border-rose-100"
                                         )}
                                     >
-                                        <option value="New lead">New lead</option>
-                                        <option value="Contacted">Contacted</option>
-                                        <option value="Qualified">Qualified</option>
-                                        <option value="Won / Closed">Won / Closed</option>
-                                        <option value="Lost">Lost</option>
+                                        <option value="new">New lead</option>
+                                        <option value="contacted">Contacted</option>
+                                        <option value="qualified">Qualified</option>
+                                        <option value="won">Won / Closed</option>
+                                        <option value="lost">Lost</option>
                                     </select>
                                 </td>
                                 <td className="px-8 py-6 text-[11px] font-bold text-slate-400 whitespace-nowrap">

@@ -20,7 +20,7 @@ const STATUS_OPTIONS = [
 ];
 const SOURCE_OPTIONS = ["All Sources", "Digital Marketing", "Direct Referral", "Cold Outreach", "Exhibition"];
 
-export default function LeadDashboard() {
+export default function ContactDashboard() {
     const [leads, setLeads] = useState<Lead[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -135,9 +135,9 @@ export default function LeadDashboard() {
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-black tracking-tight text-slate-900 flex items-center gap-2">
-                        <Home className="w-8 h-8 text-primary" /> Lead Management
+                        <Home className="w-8 h-8 text-primary" /> Contact Registry
                     </h1>
-                    <p className="text-sm font-medium text-slate-500 mt-1">Institutional-grade prospect tracking and conversion pipeline.</p>
+                    <p className="text-sm font-medium text-slate-500 mt-1">Unified communication hub for all institutional contacts.</p>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -147,7 +147,7 @@ export default function LeadDashboard() {
                         className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-2xl text-sm font-bold uppercase shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:bg-primary-dark transition-all hover:-translate-y-0.5"
                     >
                         <Plus className="w-5 h-5" />
-                        Capture New Lead
+                        New Contact Engagement
                     </button>
                 </div>
             </div>
