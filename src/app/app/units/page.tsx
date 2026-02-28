@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 
 export default function UnitsPage() {
     const [units, setUnits] = useState<any[]>([]);
@@ -46,8 +47,8 @@ export default function UnitsPage() {
         setIsLoading(true);
         try {
             const [unitsRes, projectsRes] = await Promise.all([
-                fetch("/api/units"),
-                fetch("/api/projects")
+                fetch("/realerpcrm/api/units"),
+                fetch("/realerpcrm/api/projects")
             ]);
             const unitsData = await unitsRes.json();
             const projectsData = await projectsRes.json();
@@ -115,7 +116,7 @@ export default function UnitsPage() {
     const handleDelete = async (id: number) => {
         if (!confirm("Delete this unit? This action cannot be undone.")) return;
         try {
-            const res = await fetch(`/api/units/${id}`, { method: "DELETE" });
+            const res = await fetch(`/realerpcrm/api/units/${id}`, { method: "DELETE" });
             if (res.ok) {
                 fetchData();
             } else {
@@ -253,7 +254,9 @@ export default function UnitsPage() {
                                                     <div className="w-10 h-10 bg-secondary/5 rounded-xl flex items-center justify-center text-secondary border border-secondary/10 group-hover:bg-secondary group-hover:text-white transition-all">
                                                         <Grid2X2 className="w-5 h-5" />
                                                     </div>
-                                                    <span className="text-sm font-bold text-slate-800 not-italic">{unit.unitNumber}</span>
+                                                    <Link href={`/app/units/${unit.id}`} className="text-sm font-bold text-slate-800 not-italic hover:text-secondary transition-colors underline decoration-secondary/20 underline-offset-4">
+                                                        {unit.unitNumber}
+                                                    </Link>
                                                 </div>
                                             </td>
                                             <td className="px-8 py-6">

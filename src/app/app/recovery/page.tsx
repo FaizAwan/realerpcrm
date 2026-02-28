@@ -28,7 +28,7 @@ export default function RecoveryPage() {
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const res = await fetch("/api/recoveries");
+            const res = await fetch("/realerpcrm/api/recoveries");
             const data = await res.json();
             setRecoveries(Array.isArray(data) ? data : []);
         } catch (error) {
@@ -99,7 +99,7 @@ export default function RecoveryPage() {
     const handleDelete = async (id: number) => {
         if (!confirm("Delete this recovery record?")) return;
         try {
-            const res = await fetch(`/api/recoveries/${id}`, { method: "DELETE" });
+            const res = await fetch(`/realerpcrm/api/recoveries/${id}`, { method: "DELETE" });
             if (res.ok) fetchData();
         } catch (error) {
             alert("Delete failed");

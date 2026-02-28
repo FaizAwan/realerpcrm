@@ -33,7 +33,7 @@ export default function FinancePage() {
     const fetchEntries = async () => {
         setIsLoading(true);
         try {
-            const res = await fetch("/api/finance");
+            const res = await fetch("/realerpcrm/api/finance");
             const data = await res.json();
             setEntries(Array.isArray(data) ? data : []);
         } catch (error) {
@@ -101,7 +101,7 @@ export default function FinancePage() {
     const handleDelete = async (id: number) => {
         if (!confirm("Remove transaction legacy?")) return;
         try {
-            const res = await fetch(`/api/finance/${id}`, { method: "DELETE" });
+            const res = await fetch(`/realerpcrm/api/finance/${id}`, { method: "DELETE" });
             if (res.ok) fetchEntries();
         } catch (error) {
             alert("Delete failed.");

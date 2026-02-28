@@ -27,7 +27,7 @@ export default function GlobalTeamManagement() {
     const fetchTeam = async () => {
         setIsLoading(true);
         try {
-            const res = await fetch("/api/team");
+            const res = await fetch("/realerpcrm/api/team");
             const data = await res.json();
             setTeam(Array.isArray(data) ? data : []);
         } catch (error) {

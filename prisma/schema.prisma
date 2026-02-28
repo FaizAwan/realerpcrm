@@ -31,6 +31,7 @@ model Tenant {
   ledgers        Ledger[]
   recoveries     Recovery[]
   agencies       Agency[]
+  rentPayments   RentPayment[]
 
   @@map("tenants")
 }
@@ -75,6 +76,7 @@ model Unit {
   tenantId   Int         @map("tenant_id")
   projectId  Int         @map("project_id")
   unitNumber String      @map("unit_number") @db.VarChar(50)
+  type       String?     @default("plot") @db.VarChar(50)
   status     UnitStatus? @default(available)
   price      Decimal?    @db.Decimal(15, 2)
   
@@ -85,20 +87,45 @@ model Unit {
   height     Float?      @default(100)
   shapeType  String?     @default("rect") @map("shape_type") @db.VarChar(50)
   
-  // Ownership & Rental Data
+  // Ownership (Sale)
   ownerName  String?     @map("owner_name") @db.VarChar(255)
   ownerPhone String?     @map("owner_phone") @db.VarChar(50)
-  isRented   Boolean     @default(false) @map("is_rented")
-  rentAmount Decimal?    @map("rent_amount") @db.Decimal(15, 2)
+  saleDate   DateTime?   @map("sale_date") @db.Timestamp(0)
+  saleAgency String?     @map("sale_agency") @db.VarChar(255)
+
+  // Rental Data
+  isRented    Boolean     @default(false) @map("is_rented")
+  tenantName  String?     @map("tenant_name") @db.VarChar(255)
+  tenantPhone String?     @map("tenant_phone") @db.VarChar(50)
+  rentAmount  Decimal?    @map("rent_amount") @db.Decimal(15, 2)
+  rentDate    DateTime?   @map("rent_date") @db.Timestamp(0)
+  rentAgency  String?     @map("rent_agency") @db.VarChar(255)
 
   created_at DateTime    @default(now()) @db.Timestamp(0)
   bookings   Booking[]
+  rentPayments RentPayment[]
   tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "units_ibfk_1")
   project    Project     @relation(fields: [projectId], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "units_ibfk_2")
 
   @@index([projectId], map: "project_id")
   @@index([tenantId], map: "tenant_id")
   @@map("units")
+}
+
+model RentPayment {
+  id          Int      @id @default(autoincrement())
+  tenantId    Int      @map("tenant_id")
+  unitId      Int      @map("unit_id")
+  amount      Decimal  @db.Decimal(15, 2)
+  month       String   @db.VarChar(50)
+  paymentDate DateTime @default(now()) @map("payment_date") @db.Timestamp(0)
+  status      String   @default("paid")
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  unit        Unit     @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId], map: "tenant_id")
+  @@index([unitId], map: "unit_id")
+  @@map("rent_payments")
 }
 
 model Booking {

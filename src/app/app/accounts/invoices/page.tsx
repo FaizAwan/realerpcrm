@@ -27,7 +27,7 @@ export default function InvoicesPage() {
 
     const fetchInvoices = async () => {
         try {
-            const res = await fetch('/api/invoices');
+            const res = await fetch('/realerpcrm/api/invoices');
             const data = await res.json();
             if (Array.isArray(data)) setInvoices(data);
         } catch (err) {

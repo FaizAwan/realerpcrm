@@ -35,6 +35,7 @@ export default function ProjectDetailPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isAddUnitModalOpen, setIsAddUnitModalOpen] = useState(false);
+    const [isBulkAddModalOpen, setIsBulkAddModalOpen] = useState(false);
 
     // Edit Project Form State
     const [projectForm, setProjectForm] = useState({
@@ -51,10 +52,19 @@ export default function ProjectDetailPage() {
         status: "available"
     });
 
+    // Bulk Add Form State
+    const [bulkForm, setBulkForm] = useState({
+        prefix: "",
+        startNumber: 1,
+        endNumber: 10,
+        price: "",
+        status: "available"
+    });
+
     const fetchProject = async () => {
         setIsLoading(true);
         try {
-            const res = await fetch(`/api/projects/${id}`);
+            const res = await fetch(`/realerpcrm/api/projects/${id}`);
             const data = await res.json();
             if (data.error) throw new Error(data.error);
             setProject(data);
@@ -78,7 +88,7 @@ export default function ProjectDetailPage() {
     const handleUpdateProject = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const res = await fetch(`/api/projects/${id}`, {
+            const res = await fetch(`/realerpcrm/api/projects/${id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(projectForm)
@@ -95,7 +105,7 @@ export default function ProjectDetailPage() {
     const handleAddUnit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const res = await fetch(`/api/units`, {
+            const res = await fetch(`/realerpcrm/api/units`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -110,6 +120,34 @@ export default function ProjectDetailPage() {
             }
         } catch (error) {
             alert("Add unit failed");
+        }
+    };
+
+    const handleBulkAdd = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const units = [];
+        for (let i = bulkForm.startNumber; i <= bulkForm.endNumber; i++) {
+            units.push({
+                unitNumber: `${bulkForm.prefix}${i}`,
+                price: bulkForm.price,
+                status: bulkForm.status,
+                projectId: parseInt(id as string)
+            });
+        }
+
+        try {
+            const res = await fetch(`/realerpcrm/api/units`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(units)
+            });
+            if (res.ok) {
+                fetchProject();
+                setIsBulkAddModalOpen(false);
+                setBulkForm({ prefix: "", startNumber: 1, endNumber: 10, price: "", status: "available" });
+            }
+        } catch (error) {
+            alert("Bulk creation failed");
         }
     };
 
@@ -160,6 +198,13 @@ export default function ProjectDetailPage() {
                     >
                         <Edit3 className="w-4 h-4" />
                         Modify Detail
+                    </button>
+                    <button
+                        onClick={() => setIsBulkAddModalOpen(true)}
+                        className="px-6 py-3 bg-secondary text-white rounded-2xl text-xs font-bold uppercase tracking-wide shadow-lg shadow-secondary/20 hover:scale-105 transition-all flex items-center gap-2"
+                    >
+                        <Grid2X2 className="w-4 h-4" />
+                        Bulk Sync
                     </button>
                     <button
                         onClick={() => setIsAddUnitModalOpen(true)}
@@ -241,7 +286,11 @@ export default function ProjectDetailPage() {
                                     ) : (
                                         project.units?.map((unit: any) => (
                                             <tr key={unit.id} className="hover:bg-slate-50/50 transition-colors group">
-                                                <td className="px-8 py-5 text-sm font-bold text-slate-800">{unit.unitNumber}</td>
+                                                <td className="px-8 py-5 text-sm font-bold text-slate-800">
+                                                    <Link href={`/app/units/${unit.id}`} className="hover:text-primary transition-colors underline decoration-primary/20 underline-offset-4">
+                                                        {unit.unitNumber}
+                                                    </Link>
+                                                </td>
                                                 <td className="px-8 py-5 text-sm font-bold text-slate-600">
                                                     {unit.price ? `${parseFloat(unit.price).toLocaleString()} PKR` : 'UNSET'}
                                                 </td>
@@ -253,12 +302,12 @@ export default function ProjectDetailPage() {
                                                     )}>{unit.status}</span>
                                                 </td>
                                                 <td className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                                    {unit.bookings?.[0]?.customerName || "Protocol Neutral"}
+                                                    {unit.ownerName || unit.bookings?.[0]?.customerName || "Protocol Neutral"}
                                                 </td>
                                                 <td className="px-8 py-5 text-right">
-                                                    <button className="p-2 text-slate-300 hover:text-slate-800 transition-all opacity-0 group-hover:opacity-100">
-                                                        <MoreVertical className="w-4 h-4" />
-                                                    </button>
+                                                    <Link href={`/app/units/${unit.id}`} className="px-4 py-2 bg-primary/10 text-primary rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-primary hover:text-white transition-all opacity-0 group-hover:opacity-100 inline-block">
+                                                        Manage
+                                                    </Link>
                                                 </td>
                                             </tr>
                                         ))
@@ -403,6 +452,75 @@ export default function ProjectDetailPage() {
                                 </div>
                                 <button type="submit" className="w-full py-5 bg-secondary text-white rounded-2xl font-bold uppercase tracking-widest shadow-xl shadow-secondary/30 hover:bg-secondary-dark transition-all flex items-center justify-center gap-3">
                                     Initialize Inventory
+                                    <ChevronRight className="w-4 h-4" />
+                                </button>
+                            </form>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
+
+            {/* Bulk Add Unit Modal */}
+            <AnimatePresence>
+                {isBulkAddModalOpen && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            onClick={() => setIsBulkAddModalOpen(false)}
+                            className="fixed inset-0 z-[120] bg-slate-900/60 backdrop-blur-sm cursor-pointer"
+                        />
+                        <motion.div
+                            initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+                            className="fixed inset-x-0 bottom-0 z-[130] w-full max-w-2xl mx-auto bg-white shadow-2xl rounded-t-[3rem] p-12"
+                        >
+                            <div className="flex items-center justify-between mb-8">
+                                <div>
+                                    <h2 className="text-2xl font-bold text-slate-800">Bulk Inventory Synchronization</h2>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Mass Record Generation Protocol</p>
+                                </div>
+                                <button onClick={() => setIsBulkAddModalOpen(false)} className="p-2 text-slate-400 hover:bg-slate-100 rounded-xl transition-all"><X className="w-6 h-6" /></button>
+                            </div>
+
+                            <form onSubmit={handleBulkAdd} className="space-y-6">
+                                <div className="grid grid-cols-3 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Prefix (e.g. H-)</label>
+                                        <input placeholder="Prefix" value={bulkForm.prefix} onChange={e => setBulkForm({ ...bulkForm, prefix: e.target.value })} className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Start No.</label>
+                                        <input type="number" required value={bulkForm.startNumber} onChange={e => setBulkForm({ ...bulkForm, startNumber: parseInt(e.target.value) })} className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">End No.</label>
+                                        <input type="number" required value={bulkForm.endNumber} onChange={e => setBulkForm({ ...bulkForm, endNumber: parseInt(e.target.value) })} className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all" />
+                                    </div>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Price Per Unit</label>
+                                        <input type="number" required placeholder="PKR Amount" value={bulkForm.price} onChange={e => setBulkForm({ ...bulkForm, price: e.target.value })} className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">Sync Status</label>
+                                        <select value={bulkForm.status} onChange={e => setBulkForm({ ...bulkForm, status: e.target.value })} className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-primary/20 appearance-none">
+                                            <option value="available">Sync: Available</option>
+                                            <option value="booked">Sync: Booked</option>
+                                            <option value="sold">Sync: Transferred (Sold)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="p-6 bg-secondary/5 rounded-2xl border border-secondary/10">
+                                    <p className="text-xs font-bold text-secondary flex items-center gap-2">
+                                        <Grid2X2 className="w-4 h-4" />
+                                        This protocol will generate {bulkForm.endNumber - bulkForm.startNumber + 1} records instantly.
+                                    </p>
+                                </div>
+
+                                <button type="submit" className="w-full py-5 bg-secondary text-white rounded-2xl font-bold uppercase tracking-widest shadow-xl shadow-secondary/30 hover:bg-secondary-dark transition-all flex items-center justify-center gap-3">
+                                    Execute Bulk Synchronization
                                     <ChevronRight className="w-4 h-4" />
                                 </button>
                             </form>

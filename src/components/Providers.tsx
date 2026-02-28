@@ -5,7 +5,7 @@ import NavigationLoader from "./NavigationLoader";
 
 export function Providers({ children }: { children: React.ReactNode }) {
     return (
-        <SessionProvider>
+        <SessionProvider basePath="/realerpcrm/api/auth">
             <NavigationLoader />
             {children}
         </SessionProvider>

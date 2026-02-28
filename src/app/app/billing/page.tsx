@@ -49,8 +49,8 @@ export default function BillingPage() {
         setIsLoading(true);
         try {
             const [billsRes, suppliersRes] = await Promise.all([
-                fetch("/api/bills"),
-                fetch("/api/suppliers")
+                fetch("/realerpcrm/api/bills"),
+                fetch("/realerpcrm/api/suppliers")
             ]);
             const billsData = await billsRes.json();
             const suppliersData = await suppliersRes.json();
@@ -128,7 +128,7 @@ export default function BillingPage() {
     const handleDelete = async (id: number) => {
         if (!confirm("Authorize decompression of this record?")) return;
         try {
-            const res = await fetch(`/api/bills/${id}`, { method: "DELETE" });
+            const res = await fetch(`/realerpcrm/api/bills/${id}`, { method: "DELETE" });
             if (res.ok) fetchData();
         } catch (error) {
             alert("Record deletion failed.");

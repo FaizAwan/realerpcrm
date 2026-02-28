@@ -36,7 +36,7 @@ export default function LeadTasks() {
     const fetchTasks = async () => {
         setIsLoading(true);
         try {
-            const res = await fetch("/api/tasks");
+            const res = await fetch("/realerpcrm/api/tasks");
             const data = await res.json();
             setTasks(Array.isArray(data) ? data : []);
         } catch (error) {
@@ -98,7 +98,7 @@ export default function LeadTasks() {
     const handleDelete = async (id: number) => {
         if (!confirm("Confirm Deletion?")) return;
         try {
-            const res = await fetch(`/api/tasks/${id}`, { method: "DELETE" });
+            const res = await fetch(`/realerpcrm/api/tasks/${id}`, { method: "DELETE" });
             if (res.ok) fetchTasks();
         } catch (error) {
             alert("Delete failed.");
@@ -108,7 +108,7 @@ export default function LeadTasks() {
     const toggleStatus = async (task: any) => {
         const newStatus = task.status === 'done' ? 'todo' : 'done';
         try {
-            const res = await fetch(`/api/tasks/${task.id}`, {
+            const res = await fetch(`/realerpcrm/api/tasks/${task.id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ status: newStatus })

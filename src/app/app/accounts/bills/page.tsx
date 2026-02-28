@@ -26,7 +26,7 @@ export default function BillsPage() {
 
     const fetchBills = async () => {
         try {
-            const res = await fetch('/api/bills');
+            const res = await fetch('/realerpcrm/api/bills');
             const data = await res.json();
             if (Array.isArray(data)) setBills(data);
         } catch (err) {

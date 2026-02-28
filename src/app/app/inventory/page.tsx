@@ -23,7 +23,7 @@ export default function InventoryDashboard() {
 
     const fetchInventory = async () => {
         try {
-            const res = await fetch('/api/store');
+            const res = await fetch('/realerpcrm/api/store');
             const data = await res.json();
             if (Array.isArray(data)) setItems(data);
         } catch (err) {

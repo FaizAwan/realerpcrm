@@ -71,12 +71,44 @@ export async function POST(req: Request) {
             data: {
                 customerName: body.customerName,
                 amountPaid: body.amountPaid ? parseFloat(body.amountPaid) : 0,
-                status: body.status || "pending",
+                status: body.status || "confirmed",
                 unitId: parseInt(body.unitId),
                 tenantId: tenantId,
                 bookingDate: body.bookingDate ? new Date(body.bookingDate) : new Date()
             }
         });
+
+        // Determine Unit Status and Ownership
+        const isFullPayment = body.isFullPayment === true;
+        const unitUpdateData: any = {
+            status: isFullPayment ? "sold" : "booked"
+        };
+
+        if (isFullPayment) {
+            unitUpdateData.ownerName = body.customerName;
+            unitUpdateData.ownerPhone = body.customerPhone || null;
+            unitUpdateData.saleDate = body.bookingDate ? new Date(body.bookingDate) : new Date();
+            unitUpdateData.saleAgency = body.agency || "Direct Booking";
+        }
+
+        // Update Unit
+        await db.unit.update({
+            where: { id: parseInt(body.unitId) },
+            data: unitUpdateData
+        });
+
+        // Create Finance Entry
+        if (body.amountPaid && parseFloat(body.amountPaid) > 0) {
+            await db.financeEntry.create({
+                data: {
+                    tenantId: tenantId,
+                    type: 'income',
+                    amount: parseFloat(body.amountPaid),
+                    category: isFullPayment ? 'Full Payment' : 'Booking Payment',
+                    description: `${isFullPayment ? 'Full payment' : 'Booking deposit'} from ${body.customerName} for Unit ID ${body.unitId}`
+                }
+            });
+        }
         
         return NextResponse.json(booking);
     } catch (error) {

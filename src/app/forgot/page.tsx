@@ -25,7 +25,7 @@ export default function ForgotPasswordPage() {
         setIsLoading(true);
 
         try {
-            const response = await fetch("/api/auth/forgot", {
+            const response = await fetch("/realerpcrm/api/auth/forgot", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email: formData.email })
@@ -50,7 +50,7 @@ export default function ForgotPasswordPage() {
         setIsLoading(true);
 
         try {
-            const response = await fetch("/api/auth/reset-password", {
+            const response = await fetch("/realerpcrm/api/auth/reset-password", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData)

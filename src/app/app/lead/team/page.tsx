@@ -27,8 +27,8 @@ export default function TeamDashboard() {
         setIsLoading(true);
         try {
             const [teamRes, leadsRes] = await Promise.all([
-                fetch("/api/team"),
-                fetch("/api/leads")
+                fetch("/realerpcrm/api/team"),
+                fetch("/realerpcrm/api/leads")
             ]);
             const teamData = await teamRes.json();
             const leadsData = await leadsRes.json();

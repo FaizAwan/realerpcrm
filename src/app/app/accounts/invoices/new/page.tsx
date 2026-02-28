@@ -43,7 +43,7 @@ export default function NewInvoicePage() {
 
     const fetchStoreItems = async () => {
         try {
-            const res = await fetch('/api/store');
+            const res = await fetch('/realerpcrm/api/store');
             const data = await res.json();
             if (Array.isArray(data)) setStoreItems(data);
         } catch (err) {
@@ -87,7 +87,7 @@ export default function NewInvoicePage() {
         e.preventDefault();
         setLoading(true);
         try {
-            const res = await fetch('/api/invoices', {
+            const res = await fetch('/realerpcrm/api/invoices', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...invoice, amount: totalAmount })

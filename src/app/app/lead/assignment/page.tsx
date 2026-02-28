@@ -45,7 +45,7 @@ export default function LeadsPage() {
     const fetchLeads = async () => {
         setIsLoading(true);
         try {
-            const res = await fetch("/api/leads");
+            const res = await fetch("/realerpcrm/api/leads");
             const data = await res.json();
             setLeads(Array.isArray(data) ? data : []);
         } catch (error) {
@@ -110,7 +110,7 @@ export default function LeadsPage() {
     const handleDeleteLead = async (id: number) => {
         if (!confirm("Confirm Deletion? This action is permanent.")) return;
         try {
-            const res = await fetch(`/api/leads/${id}`, { method: "DELETE" });
+            const res = await fetch(`/realerpcrm/api/leads/${id}`, { method: "DELETE" });
             if (res.ok) fetchLeads();
         } catch (error) {
             alert("Delete failed.");
@@ -130,7 +130,7 @@ export default function LeadsPage() {
         setAiInsight(null);
 
         try {
-            const response = await fetch("/api/chat", {
+            const response = await fetch("/realerpcrm/api/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({

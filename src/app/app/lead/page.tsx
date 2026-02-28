@@ -37,7 +37,7 @@ export default function LeadDashboard() {
 
     const fetchLeads = async () => {
         try {
-            const res = await fetch('/api/leads');
+            const res = await fetch('/realerpcrm/api/leads');
             const data = await res.json();
             if (Array.isArray(data)) setLeads(data);
         } catch (err) {
@@ -57,7 +57,7 @@ export default function LeadDashboard() {
             const method = editingLead ? 'PUT' : 'POST';
             const body = editingLead ? { ...formData, id: editingLead.id } : formData;
 
-            const res = await fetch('/api/leads', {
+            const res = await fetch('/realerpcrm/api/leads', {
                 method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
@@ -77,7 +77,7 @@ export default function LeadDashboard() {
     const handleDeleteLead = async (id: string | number) => {
         if (!confirm("Are you sure you want to delete this lead?")) return;
         try {
-            const res = await fetch(`/api/leads?id=${id}`, { method: 'DELETE' });
+            const res = await fetch(`/realerpcrm/api/leads?id=${id}`, { method: 'DELETE' });
             if (res.ok) fetchLeads();
             else alert("Failed to delete lead");
         } catch (err) {
@@ -87,7 +87,7 @@ export default function LeadDashboard() {
 
     const handleStatusChange = async (id: string | number, newStatus: string) => {
         try {
-            const res = await fetch('/api/leads', {
+            const res = await fetch('/realerpcrm/api/leads', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id, status: newStatus })
@@ -101,7 +101,7 @@ export default function LeadDashboard() {
     const handleImport = async (importedLeads: any[]) => {
         setLoading(true);
         for (const lead of importedLeads) {
-            await fetch('/api/leads', {
+            await fetch('/realerpcrm/api/leads', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(lead)

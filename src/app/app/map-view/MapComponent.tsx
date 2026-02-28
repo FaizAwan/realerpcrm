@@ -57,7 +57,7 @@ export function PlotManagementMap({ hideHeader = false }: { hideHeader?: boolean
     useEffect(() => {
         const fetchProjects = async () => {
             try {
-                const res = await fetch('/api/projects');
+                const res = await fetch('/realerpcrm/api/projects');
                 if (!res.ok) {
                     console.error("Failed to fetch projects:", res.status);
                     setProjects([]);
@@ -83,7 +83,7 @@ export function PlotManagementMap({ hideHeader = false }: { hideHeader?: boolean
         const fetchUnits = async () => {
             setIsLoading(true);
             try {
-                const res = await fetch(`/api/units?projectId=${selectedProjectId}`);
+                const res = await fetch(`/realerpcrm/api/units?projectId=${selectedProjectId}`);
                 if (!res.ok) {
                     setUnits([]);
                     return;
@@ -148,7 +148,7 @@ export function PlotManagementMap({ hideHeader = false }: { hideHeader?: boolean
         };
 
         try {
-            const res = await fetch('/api/units', {
+            const res = await fetch('/realerpcrm/api/units', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newUnitData)
@@ -164,7 +164,7 @@ export function PlotManagementMap({ hideHeader = false }: { hideHeader?: boolean
 
     const handleUpdateUnit = async (id: number, updates: Partial<Unit>) => {
         try {
-            const res = await fetch(`/api/units/${id}`, {
+            const res = await fetch(`/realerpcrm/api/units/${id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updates)
@@ -181,7 +181,7 @@ export function PlotManagementMap({ hideHeader = false }: { hideHeader?: boolean
     const handleDeleteUnit = async (id: number) => {
         if (!confirm("Are you sure you want to delete this block?")) return;
         try {
-            await fetch(`/api/units/${id}`, { method: 'DELETE' });
+            await fetch(`/realerpcrm/api/units/${id}`, { method: 'DELETE' });
             setUnits(units.filter(u => u.id !== id));
             setSelectedUnit(null);
             toast.success("Block deleted");
@@ -464,7 +464,7 @@ export function PlotManagementMap({ hideHeader = false }: { hideHeader?: boolean
                                         onClick={async () => {
                                             if (!selectedUnit.ownerName) return toast.error("Assign an owner first");
                                             try {
-                                                const res = await fetch('/api/invoices', {
+                                                const res = await fetch('/realerpcrm/api/invoices', {
                                                     method: 'POST',
                                                     headers: { 'Content-Type': 'application/json' },
                                                     body: JSON.stringify({

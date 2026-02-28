@@ -53,6 +53,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
                 unitNumber: body.unitNumber ?? existingUnit.unitNumber,
                 projectId: body.projectId ?? existingUnit.projectId,
                 status: body.status ?? existingUnit.status,
+                type: body.type ?? existingUnit.type,
                 price: body.price !== undefined ? (body.price ? parseFloat(body.price) : null) : existingUnit.price,
                 // Map Data Updates
                 x: body.x !== undefined ? parseFloat(body.x) : existingUnit.x,
@@ -60,11 +61,18 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
                 width: body.width !== undefined ? parseFloat(body.width) : existingUnit.width,
                 height: body.height !== undefined ? parseFloat(body.height) : existingUnit.height,
                 shapeType: body.shapeType ?? existingUnit.shapeType,
-                // Ownership & Rental Data
+                // Ownership (Sale) Data
                 ownerName: body.ownerName !== undefined ? body.ownerName : existingUnit.ownerName,
                 ownerPhone: body.ownerPhone !== undefined ? body.ownerPhone : existingUnit.ownerPhone,
+                saleDate: body.saleDate !== undefined ? (body.saleDate ? new Date(body.saleDate) : null) : existingUnit.saleDate,
+                saleAgency: body.saleAgency !== undefined ? body.saleAgency : existingUnit.saleAgency,
+                // Rental Data
                 isRented: body.isRented !== undefined ? !!body.isRented : existingUnit.isRented,
-                rentAmount: body.rentAmount !== undefined ? (body.rentAmount ? parseFloat(body.rentAmount) : null) : existingUnit.rentAmount
+                tenantName: body.tenantName !== undefined ? body.tenantName : existingUnit.tenantName,
+                tenantPhone: body.tenantPhone !== undefined ? body.tenantPhone : existingUnit.tenantPhone,
+                rentAmount: body.rentAmount !== undefined ? (body.rentAmount ? parseFloat(body.rentAmount) : null) : existingUnit.rentAmount,
+                rentDate: body.rentDate !== undefined ? (body.rentDate ? new Date(body.rentDate) : null) : existingUnit.rentDate,
+                rentAgency: body.rentAgency !== undefined ? body.rentAgency : existingUnit.rentAgency
             }
         });
         return NextResponse.json(unit);

@@ -25,8 +25,8 @@ export default function SettingsPage() {
         setIsLoading(true);
         try {
             const [usersRes, projectsRes] = await Promise.all([
-                fetch("/api/team"),
-                fetch("/api/projects")
+                fetch("/realerpcrm/api/team"),
+                fetch("/realerpcrm/api/projects")
             ]);
             const usersData = await usersRes.json();
             const projectsData = await projectsRes.json();

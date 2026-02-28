@@ -36,7 +36,7 @@ export default function ProjectsPage() {
     const fetchProjects = async () => {
         setIsLoading(true);
         try {
-            const res = await fetch("/api/projects");
+            const res = await fetch("/realerpcrm/api/projects");
             const data = await res.json();
             setProjects(Array.isArray(data) ? data : []);
         } catch (error) {
@@ -101,7 +101,7 @@ export default function ProjectsPage() {
     const handleDelete = async (id: number) => {
         if (!confirm("Delete project and its data?")) return;
         try {
-            const res = await fetch(`/api/projects/${id}`, { method: "DELETE" });
+            const res = await fetch(`/realerpcrm/api/projects/${id}`, { method: "DELETE" });
             if (res.ok) fetchProjects();
         } catch (error) {
             alert("Delete failed.");

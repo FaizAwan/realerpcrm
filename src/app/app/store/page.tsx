@@ -63,11 +63,11 @@ export default function StorePage() {
         setIsLoading(true);
         try {
             const [itemsRes, whRes, supRes, poRes, billRes] = await Promise.all([
-                fetch("/api/store"),
-                fetch("/api/warehouses"),
-                fetch("/api/suppliers"),
-                fetch("/api/purchase-orders"),
-                fetch("/api/bills")
+                fetch("/realerpcrm/api/store"),
+                fetch("/realerpcrm/api/warehouses"),
+                fetch("/realerpcrm/api/suppliers"),
+                fetch("/realerpcrm/api/purchase-orders"),
+                fetch("/realerpcrm/api/bills")
             ]);
 
             const [itemsData, whData, supData, poData, billData] = await Promise.all([
@@ -208,7 +208,7 @@ export default function StorePage() {
         setIsAnalyzing(true);
         setAiInsight(null);
         try {
-            const response = await fetch("/api/chat", {
+            const response = await fetch("/realerpcrm/api/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({

@@ -25,8 +25,8 @@ export default function SalesPage() {
         setIsLoading(true);
         try {
             const [bookingsRes, unitsRes] = await Promise.all([
-                fetch("/api/bookings"),
-                fetch("/api/units")
+                fetch("/realerpcrm/api/bookings"),
+                fetch("/realerpcrm/api/units")
             ]);
             const bookingsData = await bookingsRes.json();
             const unitsData = await unitsRes.json();
@@ -46,7 +46,7 @@ export default function SalesPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const res = await fetch("/api/bookings", {
+            const res = await fetch("/realerpcrm/api/bookings", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -68,7 +68,7 @@ export default function SalesPage() {
     const handleDelete = async (id: number) => {
         if (!confirm("Delete this booking?")) return;
         try {
-            const res = await fetch(`/api/bookings/${id}`, { method: "DELETE" });
+            const res = await fetch(`/realerpcrm/api/bookings/${id}`, { method: "DELETE" });
             if (res.ok) fetchData();
         } catch (error) {
             alert("Delete failed");

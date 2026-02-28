@@ -47,8 +47,8 @@ export default function PurchasePage() {
         setIsLoading(true);
         try {
             const [ordersRes, suppliersRes] = await Promise.all([
-                fetch("/api/purchase-orders"),
-                fetch("/api/suppliers")
+                fetch("/realerpcrm/api/purchase-orders"),
+                fetch("/realerpcrm/api/suppliers")
             ]);
             const ordersData = await ordersRes.json();
             const suppliersData = await suppliersRes.json();
@@ -119,7 +119,7 @@ export default function PurchasePage() {
     const handleDelete = async (id: number) => {
         if (!confirm("Authorize decommissioning of this order?")) return;
         try {
-            const res = await fetch(`/api/purchase-orders/${id}`, { method: "DELETE" });
+            const res = await fetch(`/realerpcrm/api/purchase-orders/${id}`, { method: "DELETE" });
             if (res.ok) fetchData();
         } catch (error) {
             alert("Order deletion failed.");

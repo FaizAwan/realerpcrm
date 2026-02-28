@@ -26,7 +26,7 @@ export default function AgenciesPage() {
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const res = await fetch("/api/agencies");
+            const res = await fetch("/realerpcrm/api/agencies");
             const data = await res.json();
             setAgencies(Array.isArray(data) ? data : []);
         } catch (error) {
@@ -93,7 +93,7 @@ export default function AgenciesPage() {
     const handleDelete = async (id: number) => {
         if (!confirm("Delete this agency?")) return;
         try {
-            const res = await fetch(`/api/agencies/${id}`, { method: "DELETE" });
+            const res = await fetch(`/realerpcrm/api/agencies/${id}`, { method: "DELETE" });
             if (res.ok) fetchData();
         } catch (error) {
             alert("Delete failed");

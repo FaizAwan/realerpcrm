@@ -38,7 +38,7 @@ export default function LoginPage() {
             } else {
                 // Use native window location instead of router.push + router.refresh 
                 // to prevent Next.js internal router crashes and stuck blurry overlays
-                window.location.href = "/app";
+                window.location.href = "/realerpcrm/app";
             }
         } catch (err) {
             setError("Something went wrong. Please try again.");

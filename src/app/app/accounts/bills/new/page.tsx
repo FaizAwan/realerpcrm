@@ -48,7 +48,7 @@ export default function NewBillPage() {
 
     const fetchStoreItems = async () => {
         try {
-            const res = await fetch('/api/store');
+            const res = await fetch('/realerpcrm/api/store');
             const data = await res.json();
             if (Array.isArray(data)) setStoreItems(data);
         } catch (err) {
@@ -58,7 +58,7 @@ export default function NewBillPage() {
 
     const fetchSuppliers = async () => {
         try {
-            const res = await fetch('/api/suppliers');
+            const res = await fetch('/realerpcrm/api/suppliers');
             const data = await res.json();
             if (Array.isArray(data)) setSuppliers(data);
         } catch (err) {
@@ -104,7 +104,7 @@ export default function NewBillPage() {
 
         setLoading(true);
         try {
-            const res = await fetch('/api/bills', {
+            const res = await fetch('/realerpcrm/api/bills', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...bill, amount: totalAmount })

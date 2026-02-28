@@ -55,8 +55,8 @@ export default function BookingsPage() {
         setIsLoading(true);
         try {
             const [bookingsRes, unitsRes] = await Promise.all([
-                fetch("/api/bookings"),
-                fetch("/api/units")
+                fetch("/realerpcrm/api/bookings"),
+                fetch("/realerpcrm/api/units")
             ]);
             const bookingsData = await bookingsRes.json();
             const unitsData = await unitsRes.json();
@@ -127,7 +127,7 @@ export default function BookingsPage() {
     const handleDelete = async (id: number) => {
         if (!confirm("Confirm permanent removal of this booking ledger?")) return;
         try {
-            const res = await fetch(`/api/bookings/${id}`, { method: "DELETE" });
+            const res = await fetch(`/realerpcrm/api/bookings/${id}`, { method: "DELETE" });
             if (res.ok) fetchData();
         } catch (error) {
             alert("Delete failed.");

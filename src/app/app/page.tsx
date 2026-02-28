@@ -47,12 +47,12 @@ export default function DashboardPage() {
                     projectsRes,
                     unitsRes
                 ] = await Promise.all([
-                    fetch("/api/leads"),
-                    fetch("/api/bookings"),
-                    fetch("/api/tasks"),
-                    fetch("/api/finance"),
-                    fetch("/api/projects"),
-                    fetch("/api/units")
+                    fetch("/realerpcrm/api/leads"),
+                    fetch("/realerpcrm/api/bookings"),
+                    fetch("/realerpcrm/api/tasks"),
+                    fetch("/realerpcrm/api/finance"),
+                    fetch("/realerpcrm/api/projects"),
+                    fetch("/realerpcrm/api/units")
                 ]);
 
                 const leads = await leadsRes.json();

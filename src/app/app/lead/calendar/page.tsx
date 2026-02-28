@@ -26,7 +26,7 @@ export default function LeadCalendar() {
     const fetchTasks = async () => {
         setIsLoading(true);
         try {
-            const res = await fetch("/api/tasks");
+            const res = await fetch("/realerpcrm/api/tasks");
             const data = await res.json();
             setTasks(Array.isArray(data) ? data : []);
         } catch (error) {
